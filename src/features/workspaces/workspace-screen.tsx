@@ -296,6 +296,12 @@ export function WorkspaceScreen({ session }: { session: Session }) {
       userEmail={session.user.email ?? "usuario"}
       workspaceName={activeWorkspace?.name ?? null}
       workspaceRole={activeWorkspace?.role ?? null}
+      workspaces={workspaces.map((workspace) => ({
+        id: workspace.id,
+        name: workspace.name,
+      }))}
+      activeWorkspaceId={activeWorkspaceId}
+      onWorkspaceChange={(id) => setActiveWorkspaceId(id)}
       navItems={navItems}
       onSignOut={() => supabase.auth.signOut()}
     >

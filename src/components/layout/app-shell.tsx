@@ -4,6 +4,13 @@ import { NavLink } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
 type NavItem = {
@@ -15,6 +22,9 @@ type AppShellProps = {
   userEmail: string
   workspaceName?: string | null
   workspaceRole?: string | null
+  workspaces?: { id: string; name: string }[]
+  activeWorkspaceId?: string | null
+  onWorkspaceChange?: (id: string) => void
   navItems: NavItem[]
   onSignOut: () => void
   children: React.ReactNode
@@ -24,6 +34,9 @@ export function AppShell({
   userEmail,
   workspaceName,
   workspaceRole,
+  workspaces,
+  activeWorkspaceId,
+  onWorkspaceChange,
   navItems,
   onSignOut,
   children,
@@ -37,7 +50,28 @@ export function AppShell({
           SDR CRM
         </p>
         <p className="text-lg font-semibold">Painel</p>
-        {workspaceName ? (
+        {workspaces && workspaces.length > 0 && onWorkspaceChange ? (
+          <div className="mt-3 space-y-2">
+            <Select
+              value={activeWorkspaceId ?? undefined}
+              onValueChange={onWorkspaceChange}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecionar workspace" />
+              </SelectTrigger>
+              <SelectContent>
+                {workspaces.map((workspace) => (
+                  <SelectItem key={workspace.id} value={workspace.id}>
+                    {workspace.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {workspaceRole ? (
+              <Badge variant="secondary">{workspaceRole}</Badge>
+            ) : null}
+          </div>
+        ) : workspaceName ? (
           <div className="mt-3 space-y-1">
             <p className="text-sm font-medium">{workspaceName}</p>
             {workspaceRole ? (
@@ -59,7 +93,7 @@ export function AppShell({
             className={({ isActive }) =>
               cn(
                 "block rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted/80",
-                isActive && "bg-muted/80 font-medium"
+                isActive && "bg-foreground text-background font-medium"
               )
             }
             onClick={() => setIsOpen(false)}
@@ -88,7 +122,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-muted/40">
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-64 border-r border-border/60 bg-background/90 lg:flex">
+        <aside className="sticky top-0 hidden h-screen w-56 border-r border-border/60 bg-background/90 lg:flex">
           {sidebar}
         </aside>
 
@@ -124,7 +158,7 @@ export function AppShell({
       />
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-full w-72 border-r border-border/60 bg-background/95 shadow-lg transition-transform lg:hidden",
+          "fixed left-0 top-0 z-50 h-full w-64 border-r border-border/60 bg-background/95 shadow-lg transition-transform lg:hidden",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

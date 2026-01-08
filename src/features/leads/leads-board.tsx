@@ -9,6 +9,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { useCampaigns } from "@/features/campaigns/use-campaigns"
 import { MetricsSummary } from "@/features/dashboard/metrics-summary"
 import { useFunnelStages } from "@/features/funnel/use-funnel-stages"
@@ -36,6 +44,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
   const [leadsLoading, setLeadsLoading] = React.useState(true)
   const [leadsError, setLeadsError] = React.useState<string | null>(null)
   const [createResetToken, setCreateResetToken] = React.useState(0)
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false)
 
   const {
     stages,
@@ -187,6 +196,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
 
     setCreateResetToken((current) => current + 1)
     await loadLeads()
+    setIsCreateOpen(false)
     return null
   }
 
@@ -253,9 +263,39 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
             Leads organizados por etapa do funil.
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={handleRefresh} disabled={loading}>
-          {loading ? "Atualizando..." : "Atualizar"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button type="button">Novo lead</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Novo lead</DialogTitle>
+                <DialogDescription>
+                  Cadastre leads rapidamente no funil.
+                </DialogDescription>
+              </DialogHeader>
+              <LeadForm
+                stages={stages}
+                customFieldDefinitions={definitions}
+                owners={owners}
+                initialValues={createInitialValues}
+                submitLabel="Adicionar lead"
+                busyLabel="Adicionando..."
+                resetToken={createResetToken}
+                onSubmit={handleCreateLead}
+              />
+            </DialogContent>
+          </Dialog>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={loading}
+          >
+            {loading ? "Atualizando..." : "Atualizar"}
+          </Button>
+        </div>
       </div>
 
       {errorMessage ? (
@@ -267,26 +307,6 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       ) : (
         <>
           <MetricsSummary stages={stages} leads={leads} loading={loading} />
-          <Card>
-            <CardHeader>
-              <CardTitle>Novo lead</CardTitle>
-              <CardDescription>
-                Cadastre leads rapidamente no funil.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LeadForm
-                stages={stages}
-                customFieldDefinitions={definitions}
-                owners={owners}
-                initialValues={createInitialValues}
-                submitLabel="Adicionar lead"
-                busyLabel="Adicionando..."
-                resetToken={createResetToken}
-                onSubmit={handleCreateLead}
-              />
-            </CardContent>
-          </Card>
 
           <div className="grid gap-4 xl:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
             {columns.map((column) => (
