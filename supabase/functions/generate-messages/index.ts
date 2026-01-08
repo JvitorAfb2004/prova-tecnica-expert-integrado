@@ -135,12 +135,19 @@ function buildPrompt(
     `Instrucoes adicionais: ${promptText}.`,
     `Dados do lead:\n${leadLines.join("\n")}`,
     `Gere ${variations} variacoes curtas e objetivas.`,
-    `Responda apenas com um JSON array de strings.`,
-    `Formato obrigatorio: ["Mensagem 1","Mensagem 2","Mensagem 3"].`,
+    `Responda apenas com um JSON valido.`,
+    `Formato obrigatorio: ["Mensagem 1.","Mensagem 2.","Mensagem 3."].`,
     `Nao inclua markdown, comentarios, nem texto fora do JSON.`,
+    `Nao envolva o JSON em uma string.`,
+    `Nao adicione texto antes ou depois do JSON.`,
+    `Nao use quebras de linha no JSON.`,
     `Nao use placeholders como "[Seu Nome]" ou "[Sua Empresa]".`,
     `Use apenas os dados fornecidos no contexto e do lead.`,
     `Finalize cada mensagem com pontuacao.`,
+    `Cada mensagem deve ter no maximo 220 caracteres.`,
+    `Nao use reticencias.`,
+    `Nao invente informacoes ausentes.`,
+    `Nao use colchetes dentro das mensagens.`,
   ].join("\n")
 }
 
@@ -337,6 +344,7 @@ async function callGemini({
           temperature,
           maxOutputTokens: 512,
           candidateCount: variations,
+          responseMimeType: "application/json",
         },
       }),
     }
@@ -349,16 +357,31 @@ async function callGemini({
 
   const data = await response.json()
   return (data?.candidates ?? [])
-    .map((candidate: { content?: { parts?: { text?: string }[] } }) =>
-      candidate?.content?.parts?.[0]?.text ?? ""
-    )
+    .map((candidate: { content?: { parts?: { text?: string }[] } }) => {
+      const parts = candidate?.content?.parts ?? []
+      const text = parts.map((part) => part?.text ?? "").join("").trim()
+      return text
+    })
     .filter((text: string) => text && text.trim().length > 0)
 }
 
 function filterMessages(messages: string[]) {
   return messages
-    .map((message) => message.trim())
+    .map((message) => normalizeMessage(message))
     .filter((message) => message.length > 0)
-    .filter((message) => !message.includes("["))
+    .filter((message) => !message.includes("[") && !message.includes("]"))
+    .filter((message) => !/seu\s+nome|sua\s+empresa|seu\s+cargo/i.test(message))
     .filter((message) => /[.!?]$/.test(message))
+    .filter((message) => message.length <= 220)
+}
+
+function normalizeMessage(message: string) {
+  return message
+    .trim()
+    .replace(/^\[/, "")
+    .replace(/\]$/, "")
+    .replace(/^"+/, "")
+    .replace(/"+$/, "")
+    .replace(/\s+/g, " ")
+    .trim()
 }
