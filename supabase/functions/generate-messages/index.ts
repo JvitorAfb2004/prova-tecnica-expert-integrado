@@ -75,6 +75,7 @@ Deno.serve(async (req) => {
         generationConfig: {
           temperature: 0.4,
           maxOutputTokens: 768,
+          candidateCount: variations,
         },
       }),
     }
@@ -86,8 +87,16 @@ Deno.serve(async (req) => {
   }
 
   const data = await response.json()
-  const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ""
-  const messages = parseMessages(rawText, variations)
+  const candidateTexts = (data?.candidates ?? [])
+    .map((candidate: { content?: { parts?: { text?: string }[] } }) =>
+      candidate?.content?.parts?.[0]?.text ?? ""
+    )
+    .filter((text: string) => text && text.trim().length > 0)
+
+  const messages = collectMessages(
+    candidateTexts.length > 0 ? candidateTexts : [""],
+    variations
+  )
 
   if (messages.length === 0) {
     return jsonResponse({ error: "empty_generation" }, 502)
@@ -177,11 +186,17 @@ function parseMessages(rawText: string, variations: number) {
   try {
     const parsed = JSON.parse(cleaned)
     if (Array.isArray(parsed)) {
-      return parsed.filter((item) => typeof item === "string").slice(0, variations)
+      return parsed
+        .filter((item) => typeof item === "string")
+        .map((item) => item.trim())
+        .filter((item) => item && item !== "[" && item !== "]")
+        .slice(0, variations)
     }
     if (parsed && Array.isArray(parsed.messages)) {
       return parsed.messages
         .filter((item: unknown) => typeof item === "string")
+        .map((item: string) => item.trim())
+        .filter((item: string) => item && item !== "[" && item !== "]")
         .slice(0, variations)
     }
   } catch (_error) {
@@ -229,4 +244,21 @@ function extractJsonArray(text: string) {
 function extractQuotedStrings(text: string) {
   const matches = text.match(/"([^"]+)"/g) ?? []
   return matches.map((match) => match.replace(/"/g, "")).filter(Boolean)
+}
+
+function collectMessages(texts: string[], variations: number) {
+  const collected: string[] = []
+
+  for (const text of texts) {
+    const parsed = parseMessages(text, variations)
+    for (const message of parsed) {
+      if (collected.includes(message)) continue
+      collected.push(message)
+      if (collected.length >= variations) {
+        return collected.slice(0, variations)
+      }
+    }
+  }
+
+  return collected.slice(0, variations)
 }

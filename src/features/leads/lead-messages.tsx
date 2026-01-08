@@ -50,14 +50,12 @@ export function LeadMessages({
     null
   )
   const [variations, setVariations] = React.useState(3)
-  const [messages, setMessages] = React.useState<string[]>([])
-  const [selectedIndex, setSelectedIndex] = React.useState<number | null>(null)
-  const [messageId, setMessageId] = React.useState<string | null>(null)
+  const [drafts, setDrafts] = React.useState<LeadMessageRow[]>([])
   const [loading, setLoading] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [notice, setNotice] = React.useState<string | null>(null)
-  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
-  const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null)
+  const [deleteTargetId, setDeleteTargetId] = React.useState<string | null>(null)
+  const [copiedKey, setCopiedKey] = React.useState<string | null>(null)
   const copyTimeoutRef = React.useRef<number | null>(null)
 
   React.useEffect(() => {
@@ -79,27 +77,14 @@ export function LeadMessages({
       .eq("campaign_id", selectedCampaignId)
       .eq("status", "draft")
       .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
 
-    if (error && error.code !== "PGRST116") {
+    if (error) {
       setErrorMessage(error.message)
       setLoading(false)
       return
     }
 
-    if (!data) {
-      setMessages([])
-      setSelectedIndex(null)
-      setMessageId(null)
-      setLoading(false)
-      return
-    }
-
-    const row = data as LeadMessageRow
-    setMessages(row.variants ?? [])
-    setSelectedIndex(row.selected_index ?? null)
-    setMessageId(row.id)
+    setDrafts((data ?? []) as LeadMessageRow[])
     setLoading(false)
   }, [lead.id, selectedCampaignId])
 
@@ -172,7 +157,7 @@ export function LeadMessages({
       return
     }
 
-    const { data: insertedRow, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from("lead_messages")
       .insert({
         workspace_id: workspaceId,
@@ -191,27 +176,19 @@ export function LeadMessages({
       return
     }
 
-    setMessages(nextMessages)
-    setSelectedIndex(null)
-    setMessageId(insertedRow?.id ?? null)
     setNotice("Mensagens geradas.")
     setLoading(false)
+    await loadMessages()
     await onGenerated()
   }
 
-  const handleSend = async (message: string, index: number) => {
+  const handleSend = async (messageId: string, index: number) => {
     setNotice(null)
     setErrorMessage(null)
     setLoading(true)
 
     if (!selectedCampaignId) {
       setErrorMessage("Selecione uma campanha.")
-      setLoading(false)
-      return
-    }
-
-    if (!messageId) {
-      setErrorMessage("Nenhuma mensagem gerada para enviar.")
       setLoading(false)
       return
     }
@@ -236,18 +213,14 @@ export function LeadMessages({
       return
     }
 
-    setSelectedIndex(updatedRow?.selected_index ?? index)
     setNotice("Mensagem enviada.")
     setLoading(false)
+    await loadMessages()
     await onSend()
   }
 
-  const handleDeleteMessages = async () => {
-    if (!messageId) {
-      setErrorMessage("Nenhuma mensagem para excluir.")
-      setIsDeleteOpen(false)
-      return
-    }
+  const handleDeleteMessages = async (targetId: string) => {
+    if (!targetId) return
 
     setErrorMessage(null)
     setNotice(null)
@@ -256,7 +229,7 @@ export function LeadMessages({
     const { error } = await supabase
       .from("lead_messages")
       .delete()
-      .eq("id", messageId)
+      .eq("id", targetId)
 
     if (error) {
       setErrorMessage(error.message)
@@ -264,12 +237,10 @@ export function LeadMessages({
       return
     }
 
-    setMessages([])
-    setSelectedIndex(null)
-    setMessageId(null)
     setNotice("Mensagens excluidas.")
     setLoading(false)
-    setIsDeleteOpen(false)
+    setDeleteTargetId(null)
+    await loadMessages()
     await onGenerated()
   }
   React.useEffect(() => {
@@ -280,16 +251,16 @@ export function LeadMessages({
     }
   }, [])
 
-  const handleCopy = async (text: string, index: number) => {
+  const handleCopy = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text)
       setNotice("Mensagem copiada.")
-      setCopiedIndex(index)
+      setCopiedKey(key)
       if (copyTimeoutRef.current) {
         window.clearTimeout(copyTimeoutRef.current)
       }
       copyTimeoutRef.current = window.setTimeout(() => {
-        setCopiedIndex(null)
+        setCopiedKey(null)
       }, 1500)
     } catch (_error) {
       setErrorMessage("Nao foi possivel copiar.")
@@ -359,32 +330,6 @@ export function LeadMessages({
         <Button type="button" size="sm" onClick={handleGenerate} disabled={loading}>
           {loading ? "Gerando..." : "Gerar mensagens"}
         </Button>
-        <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-          <AlertDialogTrigger asChild>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={loading || !messageId}
-            >
-              Excluir mensagens
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Excluir mensagens?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Isso remove as mensagens geradas para este lead.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteMessages} disabled={loading}>
-                {loading ? "Excluindo..." : "Excluir"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
       {errorMessage ? (
         <p className="text-xs text-destructive">{errorMessage}</p>
@@ -392,36 +337,88 @@ export function LeadMessages({
       {notice ? (
         <p className="text-xs text-muted-foreground">{notice}</p>
       ) : null}
-      {messages.length > 0 ? (
-        <div className="space-y-2">
-          {messages.map((message, index) => {
-            const isSent = selectedIndex === index
-            return (
+      {drafts.length > 0 ? (
+        <div className="space-y-4">
+          {drafts.map((draft) => (
             <div
-              key={`${lead.id}-${index}`}
-              className="rounded-md border border-border/60 bg-muted/30 p-2 text-xs"
+              key={draft.id}
+              className="rounded-lg border border-border/60 bg-muted/10 p-3"
             >
-              <p>{message}</p>
-              <div className="mt-2 flex justify-end gap-2">
-                <Button
-                  type="button"
-                  size="xs"
-                  variant="ghost"
-                  onClick={() => handleCopy(message, index)}
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <p className="font-medium text-foreground">
+                  Gerado em{" "}
+                  {draft.created_at
+                    ? new Date(draft.created_at).toLocaleString("pt-BR")
+                    : "data indefinida"}
+                </p>
+                <AlertDialog
+                  open={deleteTargetId === draft.id}
+                  onOpenChange={(open) =>
+                    setDeleteTargetId(open ? draft.id : null)
+                  }
                 >
-                  {copiedIndex === index ? "Copiado" : "Copiar"}
-                </Button>
-                <Button
-                  type="button"
-                  size="xs"
-                  onClick={() => handleSend(message, index)}
-                  disabled={loading || isSent}
-                >
-                  {isSent ? "Enviado" : "Enviar"}
-                </Button>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => setDeleteTargetId(draft.id)}
+                    >
+                      Excluir
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir mensagens?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Isso remove este lote de mensagens geradas.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDeleteMessages(draft.id)}
+                        disabled={loading}
+                      >
+                        {loading ? "Excluindo..." : "Excluir"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+              <div className="mt-3 space-y-2">
+                {draft.variants.map((message, index) => {
+                  const key = `${draft.id}-${index}`
+                  return (
+                    <div
+                      key={key}
+                      className="rounded-md border border-border/60 bg-muted/30 p-2 text-xs"
+                    >
+                      <p>{message}</p>
+                      <div className="mt-2 flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          size="xs"
+                          variant="ghost"
+                          onClick={() => handleCopy(message, key)}
+                        >
+                          {copiedKey === key ? "Copiado" : "Copiar"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="xs"
+                          onClick={() => handleSend(draft.id, index)}
+                          disabled={loading}
+                        >
+                          Enviar
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          )})}
+          ))}
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
