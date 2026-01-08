@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -138,7 +139,11 @@ export function CampaignsPanel({ workspaceId, stages }: CampaignsPanelProps) {
         ) : null}
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando...</p>
+          <div className="space-y-2">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
         ) : campaigns.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhuma campanha cadastrada.

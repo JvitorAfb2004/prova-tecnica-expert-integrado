@@ -92,8 +92,10 @@ export function AppShell({
             to={item.to}
             className={({ isActive }) =>
               cn(
-                "block rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted/80",
-                isActive && "bg-foreground text-background font-medium"
+                "block rounded-lg px-3 py-2 text-sm text-foreground",
+                isActive
+                  ? "bg-foreground text-background font-medium hover:bg-foreground hover:text-background"
+                  : "hover:bg-muted/80"
               )
             }
             onClick={() => setIsOpen(false)}
@@ -122,7 +124,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-muted/40">
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-56 border-r border-border/60 bg-background/90 lg:flex">
+        <aside className="sticky top-0 hidden h-screen w-52 border-r border-border/60 bg-background/90 lg:flex">
           {sidebar}
         </aside>
 
@@ -158,7 +160,7 @@ export function AppShell({
       />
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-full w-64 border-r border-border/60 bg-background/95 shadow-lg transition-transform lg:hidden",
+          "fixed left-0 top-0 z-50 h-full w-60 border-r border-border/60 bg-background/95 shadow-lg transition-transform lg:hidden",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >

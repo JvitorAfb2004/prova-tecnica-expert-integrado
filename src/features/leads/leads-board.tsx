@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useCampaigns } from "@/features/campaigns/use-campaigns"
 import { MetricsSummary } from "@/features/dashboard/metrics-summary"
 import { useFunnelStages } from "@/features/funnel/use-funnel-stages"
@@ -303,7 +304,31 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Carregando funil...</p>
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+          <div className="grid gap-4 xl:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="flex min-h-[240px] flex-col gap-3 rounded-xl border border-border/60 bg-background/80 p-3"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-5 w-8" />
+                </div>
+                <div className="space-y-2">
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                  <Skeleton className="h-14 w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <>
           <MetricsSummary stages={stages} leads={leads} loading={loading} />

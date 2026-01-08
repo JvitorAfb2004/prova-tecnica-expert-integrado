@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { supabase } from "@/lib/supabase"
 
 type WorkspaceRole = "admin" | "member"
@@ -67,6 +68,39 @@ function CreateInviteCard({
   const [notice, setNotice] = React.useState<string | null>(null)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [token, setToken] = React.useState<string | null>(null)
+  const [invites, setInvites] = React.useState<WorkspaceInviteRow[]>([])
+  const [invitesLoading, setInvitesLoading] = React.useState(true)
+  const [invitesError, setInvitesError] = React.useState<string | null>(null)
+
+  const loadInvites = React.useCallback(async () => {
+    if (!workspaceId) {
+      setInvites([])
+      setInvitesLoading(false)
+      return
+    }
+
+    setInvitesLoading(true)
+    setInvitesError(null)
+
+    const { data, error } = await supabase
+      .from("workspace_invites")
+      .select("id, email, role, status, token, created_at, expires_at")
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      setInvitesError(error.message)
+      setInvitesLoading(false)
+      return
+    }
+
+    setInvites((data ?? []) as WorkspaceInviteRow[])
+    setInvitesLoading(false)
+  }, [workspaceId])
+
+  React.useEffect(() => {
+    loadInvites()
+  }, [loadInvites])
 
   const handleCreateInvite = async (
     event: React.FormEvent<HTMLFormElement>
@@ -112,6 +146,7 @@ function CreateInviteCard({
     setEmail("")
     setIsSubmitting(false)
     await onRefresh()
+    await loadInvites()
   }
 
   return (
@@ -165,6 +200,50 @@ function CreateInviteCard({
             {isSubmitting ? "Criando..." : "Gerar convite"}
           </Button>
         </form>
+        <div className="mt-6 border-t border-border/70 pt-4">
+          <p className="text-sm font-medium">Historico de convites</p>
+          {invitesError ? (
+            <p className="mt-2 text-sm text-destructive">{invitesError}</p>
+          ) : null}
+          {invitesLoading ? (
+            <div className="mt-3 space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : invites.length === 0 ? (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Nenhum convite criado ainda.
+            </p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {invites.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="rounded-lg border border-border/60 px-3 py-2 text-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium">{invite.email}</p>
+                    <span className="text-muted-foreground">{invite.status}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-2 text-muted-foreground">
+                    <span>Papel: {invite.role}</span>
+                    <span>
+                      Criado em{" "}
+                      {new Date(invite.created_at).toLocaleDateString("pt-BR")}
+                    </span>
+                    <span>
+                      Expira{" "}
+                      {new Date(invite.expires_at).toLocaleDateString("pt-BR")}
+                    </span>
+                  </div>
+                  <div className="mt-2 rounded-md bg-muted/40 px-2 py-1 font-mono">
+                    {invite.token}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
@@ -244,4 +323,14 @@ function AcceptInviteCard({ onRefresh }: AcceptInviteProps) {
       </CardContent>
     </Card>
   )
+}
+
+type WorkspaceInviteRow = {
+  id: string
+  email: string
+  role: WorkspaceRole
+  status: string
+  token: string
+  created_at: string
+  expires_at: string
 }

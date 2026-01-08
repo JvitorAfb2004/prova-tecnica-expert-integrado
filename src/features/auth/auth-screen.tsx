@@ -60,6 +60,7 @@ function AuthForm() {
   const [mode, setMode] = React.useState<AuthMode>("sign-in")
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
+  const [confirmPassword, setConfirmPassword] = React.useState("")
   const [showPassword, setShowPassword] = React.useState(false)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
@@ -70,6 +71,12 @@ function AuthForm() {
     setIsSubmitting(true)
     setErrorMessage(null)
     setNotice(null)
+
+    if (mode === "sign-up" && password !== confirmPassword) {
+      setErrorMessage("As senhas nao conferem.")
+      setIsSubmitting(false)
+      return
+    }
 
     const action =
       mode === "sign-in"
@@ -101,6 +108,7 @@ function AuthForm() {
     }
 
     setPassword("")
+    setConfirmPassword("")
     setIsSubmitting(false)
   }
 
@@ -154,6 +162,32 @@ function AuthForm() {
               </Button>
             </div>
           </div>
+          {mode === "sign-up" ? (
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar senha</Label>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  className="pr-10"
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </Button>
+              </div>
+            </div>
+          ) : null}
           {errorMessage ? (
             <p className="text-sm text-destructive">{errorMessage}</p>
           ) : null}
@@ -178,11 +212,14 @@ function AuthForm() {
         <Button
           type="button"
           variant="link"
-          onClick={() =>
+          onClick={() => {
             setMode((current) =>
               current === "sign-in" ? "sign-up" : "sign-in"
             )
-          }
+            setConfirmPassword("")
+            setErrorMessage(null)
+            setNotice(null)
+          }}
         >
           {mode === "sign-in" ? "Criar conta" : "Entrar"}
         </Button>

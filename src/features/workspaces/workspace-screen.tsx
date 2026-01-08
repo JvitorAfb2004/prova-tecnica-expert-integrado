@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { CampaignsPanel } from "@/features/campaigns/campaigns-panel"
 import { LeadsBoard } from "@/features/leads/leads-board"
 import { CustomFieldsPanel } from "@/features/leads/custom-fields-panel"
@@ -192,7 +193,12 @@ export function WorkspaceScreen({ session }: { session: Session }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {activeWorkspace ? (
+          {loading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          ) : activeWorkspace ? (
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-medium">{activeWorkspace.name}</p>
@@ -227,7 +233,11 @@ export function WorkspaceScreen({ session }: { session: Session }) {
             <p className="text-sm text-muted-foreground">{notice}</p>
           ) : null}
           {loading ? (
-            <p className="text-sm text-muted-foreground">Aguarde...</p>
+            <div className="space-y-3">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
           ) : workspaces.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               Nenhum workspace encontrado. Crie o primeiro abaixo.
@@ -311,16 +321,12 @@ export function WorkspaceScreen({ session }: { session: Session }) {
         <Route
           path="convites"
           element={
-            activeWorkspace ? (
-              <WorkspaceInvites
-                session={session}
-                workspaceId={activeWorkspace.id}
-                isAdmin={activeWorkspace.role === "admin"}
-                onRefresh={loadWorkspaces}
-              />
-            ) : (
-              emptyWorkspaceCard
-            )
+            <WorkspaceInvites
+              session={session}
+              workspaceId={activeWorkspace?.id ?? null}
+              isAdmin={activeWorkspace?.role === "admin"}
+              onRefresh={loadWorkspaces}
+            />
           }
         />
         <Route
