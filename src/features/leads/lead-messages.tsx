@@ -57,6 +57,8 @@ export function LeadMessages({
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [notice, setNotice] = React.useState<string | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
+  const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null)
+  const copyTimeoutRef = React.useRef<number | null>(null)
 
   React.useEffect(() => {
     if (selectedCampaignId) return
@@ -270,10 +272,25 @@ export function LeadMessages({
     setIsDeleteOpen(false)
     await onGenerated()
   }
-  const handleCopy = async (text: string) => {
+  React.useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  const handleCopy = async (text: string, index: number) => {
     try {
       await navigator.clipboard.writeText(text)
       setNotice("Mensagem copiada.")
+      setCopiedIndex(index)
+      if (copyTimeoutRef.current) {
+        window.clearTimeout(copyTimeoutRef.current)
+      }
+      copyTimeoutRef.current = window.setTimeout(() => {
+        setCopiedIndex(null)
+      }, 1500)
     } catch (_error) {
       setErrorMessage("Nao foi possivel copiar.")
     }
@@ -390,9 +407,9 @@ export function LeadMessages({
                   type="button"
                   size="xs"
                   variant="ghost"
-                  onClick={() => handleCopy(message)}
+                  onClick={() => handleCopy(message, index)}
                 >
-                  Copiar
+                  {copiedIndex === index ? "Copiado" : "Copiar"}
                 </Button>
                 <Button
                   type="button"

@@ -73,8 +73,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 512,
+          temperature: 0.4,
+          maxOutputTokens: 768,
         },
       }),
     }
@@ -148,7 +148,9 @@ function buildPrompt(
     `Instrucoes adicionais: ${promptText}.`,
     `Dados do lead:\n${leadLines.join("\n")}`,
     `Gere ${variations} variacoes curtas e objetivas.`,
-    `Responda apenas com um JSON array de strings, sem markdown e sem blocos \`\`\`.`,
+    `Responda apenas com um JSON array de strings.`,
+    `Formato obrigatorio: ["Mensagem 1","Mensagem 2","Mensagem 3"].`,
+    `Nao inclua markdown, comentarios, nem texto fora do JSON.`,
   ].join("\n")
 }
 
