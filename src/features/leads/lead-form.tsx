@@ -11,12 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { getFieldLabel } from "@/features/leads/lead-fields"
+import { getMissingFields } from "@/features/leads/lead-validation"
+import type { FunnelStage } from "@/features/funnel/use-funnel-stages"
 import type { LeadFieldDefinition } from "@/features/leads/use-lead-field-definitions"
-
-export type FunnelStage = {
-  id: string
-  name: string
-}
 
 export type LeadFormValues = {
   name: string
@@ -69,6 +67,23 @@ export function LeadForm({
     setValues(initialValues)
   }, [initialValues, resetToken])
 
+  const selectedStage = React.useMemo(
+    () => stages.find((stage) => stage.id === values.stageId) ?? null,
+    [stages, values.stageId]
+  )
+
+  const requiredFields = React.useMemo(() => {
+    const stageFields = selectedStage?.required_fields ?? []
+    return Array.from(new Set(["name", ...stageFields]))
+  }, [selectedStage])
+
+  const isRequired = (key: string) => requiredFields.includes(key)
+
+  const formatRequiredMessage = (missing: string[]) => {
+    if (missing.length === 0) return null
+    return `Preencha os campos obrigatorios: ${missing.join(", ")}`
+  }
+
   const formatPhone = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 11)
     if (digits.length === 0) return ""
@@ -105,9 +120,42 @@ export function LeadForm({
     setErrorMessage(null)
     setIsSubmitting(true)
 
+    const missing = getMissingFields(
+      requiredFields,
+      {
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+        company: values.company,
+        job_title: values.jobTitle,
+        lead_source: values.leadSource,
+        notes: values.notes,
+        custom_fields: values.customFields,
+      },
+      customFieldDefinitions
+    )
+
+    if (missing.length > 0) {
+      setErrorMessage(formatRequiredMessage(missing))
+      setIsSubmitting(false)
+      return
+    }
+
     const error = await onSubmit(values)
     if (error) {
-      setErrorMessage(error)
+      const marker = "missing_required_fields:"
+      if (error.includes(marker)) {
+        const raw = error.slice(error.indexOf(marker) + marker.length)
+        const labels = raw
+          .split(",")
+          .map((key) => key.trim())
+          .filter(Boolean)
+          .map((key) => getFieldLabel(key, customFieldDefinitions))
+        const formatted = formatRequiredMessage(labels)
+        setErrorMessage(formatted ?? "Preencha os campos obrigatorios.")
+      } else {
+        setErrorMessage(error)
+      }
       setIsSubmitting(false)
       return
     }
@@ -119,7 +167,9 @@ export function LeadForm({
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="lead-name">Nome</Label>
+          <Label htmlFor="lead-name">
+            Nome{isRequired("name") ? " *" : ""}
+          </Label>
           <Input
             id="lead-name"
             placeholder="Nome do lead"
@@ -155,7 +205,9 @@ export function LeadForm({
           </div>
         ) : null}
         <div className="space-y-2">
-          <Label htmlFor="lead-email">Email</Label>
+          <Label htmlFor="lead-email">
+            Email{isRequired("email") ? " *" : ""}
+          </Label>
           <Input
             id="lead-email"
             type="email"
@@ -165,7 +217,9 @@ export function LeadForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lead-phone">Telefone</Label>
+          <Label htmlFor="lead-phone">
+            Telefone{isRequired("phone") ? " *" : ""}
+          </Label>
           <Input
             id="lead-phone"
             placeholder="+55 11 99999-9999"
@@ -176,7 +230,9 @@ export function LeadForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lead-company">Empresa</Label>
+          <Label htmlFor="lead-company">
+            Empresa{isRequired("company") ? " *" : ""}
+          </Label>
           <Input
             id="lead-company"
             placeholder="Empresa"
@@ -185,7 +241,9 @@ export function LeadForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lead-job-title">Cargo</Label>
+          <Label htmlFor="lead-job-title">
+            Cargo{isRequired("job_title") ? " *" : ""}
+          </Label>
           <Input
             id="lead-job-title"
             placeholder="Cargo"
@@ -220,7 +278,9 @@ export function LeadForm({
           </div>
         ) : null}
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="lead-source">Origem do lead</Label>
+          <Label htmlFor="lead-source">
+            Origem do lead{isRequired("lead_source") ? " *" : ""}
+          </Label>
           <Input
             id="lead-source"
             placeholder="Origem"
@@ -229,7 +289,9 @@ export function LeadForm({
           />
         </div>
         <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="lead-notes">Observacoes</Label>
+          <Label htmlFor="lead-notes">
+            Observacoes{isRequired("notes") ? " *" : ""}
+          </Label>
           <Textarea
             id="lead-notes"
             placeholder="Observacoes"
@@ -257,7 +319,10 @@ export function LeadForm({
                         : "false"
                   return (
                     <div key={field.id} className="space-y-2">
-                      <Label>{field.label}</Label>
+                      <Label>
+                        {field.label}
+                        {isRequired(field.key) ? " *" : ""}
+                      </Label>
                       <Select
                         value={boolValue}
                         onValueChange={(value) =>
@@ -282,7 +347,10 @@ export function LeadForm({
 
                 return (
                   <div key={field.id} className="space-y-2">
-                    <Label htmlFor={`custom-${field.key}`}>{field.label}</Label>
+                    <Label htmlFor={`custom-${field.key}`}>
+                      {field.label}
+                      {isRequired(field.key) ? " *" : ""}
+                    </Label>
                     <Input
                       id={`custom-${field.key}`}
                       type={field.field_type === "number" ? "number" : "text"}
