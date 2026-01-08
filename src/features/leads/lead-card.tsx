@@ -8,28 +8,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { LeadForm, type FunnelStage, type LeadFormValues } from "@/features/leads/lead-form"
+import type { Campaign } from "@/features/campaigns/use-campaigns"
+import { LeadForm, type LeadFormValues } from "@/features/leads/lead-form"
+import { LeadMessages } from "@/features/leads/lead-messages"
+import type { LeadItem } from "@/features/leads/lead-types"
+import { buildCustomFieldsPayload, normalizeCustomFields } from "@/features/leads/lead-custom-fields"
+import { getMissingFields } from "@/features/leads/lead-validation"
+import type { LeadFieldDefinition } from "@/features/leads/use-lead-field-definitions"
+import type { FunnelStage } from "@/features/funnel/use-funnel-stages"
 import { supabase } from "@/lib/supabase"
 
-export type LeadItem = {
-  id: string
-  name: string
-  email: string | null
-  phone: string | null
-  company: string | null
-  job_title: string | null
-  lead_source: string | null
-  notes: string | null
-  stage_id: string | null
-}
-
 type LeadCardProps = {
+  workspaceId: string
   lead: LeadItem
   stages: FunnelStage[]
+  campaigns: Campaign[]
+  customFieldDefinitions: LeadFieldDefinition[]
   onChanged: () => Promise<void>
 }
 
-export function LeadCard({ lead, stages, onChanged }: LeadCardProps) {
+export function LeadCard({
+  workspaceId,
+  lead,
+  stages,
+  campaigns,
+  customFieldDefinitions,
+  onChanged,
+}: LeadCardProps) {
   const [isEditing, setIsEditing] = React.useState(false)
   const [isUpdatingStage, setIsUpdatingStage] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
@@ -40,6 +45,30 @@ export function LeadCard({ lead, stages, onChanged }: LeadCardProps) {
     setIsUpdatingStage(true)
 
     const nextStageId = value === "unassigned" ? null : value
+    if (nextStageId) {
+      const stage = stages.find((item) => item.id === nextStageId)
+      const missing = getMissingFields(
+        stage?.required_fields,
+        {
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+          company: lead.company,
+          job_title: lead.job_title,
+          lead_source: lead.lead_source,
+          notes: lead.notes,
+          custom_fields: lead.custom_fields,
+        },
+        customFieldDefinitions
+      )
+
+      if (missing.length > 0) {
+        setErrorMessage(`Campos obrigatorios: ${missing.join(", ")}`)
+        setIsUpdatingStage(false)
+        return
+      }
+    }
+
     const { error } = await supabase
       .from("leads")
       .update({ stage_id: nextStageId })
@@ -86,6 +115,10 @@ export function LeadCard({ lead, stages, onChanged }: LeadCardProps) {
       job_title: values.jobTitle.trim() || null,
       lead_source: values.leadSource.trim() || null,
       notes: values.notes.trim() || null,
+      custom_fields: buildCustomFieldsPayload(
+        values.customFields,
+        customFieldDefinitions
+      ),
     }
 
     if (!payload.name) {
@@ -115,6 +148,10 @@ export function LeadCard({ lead, stages, onChanged }: LeadCardProps) {
     leadSource: lead.lead_source ?? "",
     notes: lead.notes ?? "",
     stageId: lead.stage_id,
+    customFields: normalizeCustomFields(
+      customFieldDefinitions,
+      lead.custom_fields
+    ),
   }
 
   return (
@@ -162,6 +199,12 @@ export function LeadCard({ lead, stages, onChanged }: LeadCardProps) {
         {lead.notes ? (
           <p className="text-xs text-muted-foreground">{lead.notes}</p>
         ) : null}
+        {lead.custom_fields &&
+        Object.keys(lead.custom_fields).length > 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Campos personalizados preenchidos.
+          </p>
+        ) : null}
         {errorMessage ? (
           <p className="text-xs text-destructive">{errorMessage}</p>
         ) : null}
@@ -171,6 +214,7 @@ export function LeadCard({ lead, stages, onChanged }: LeadCardProps) {
         <div className="mt-3 border-t border-border/60 pt-3">
           <LeadForm
             stages={stages}
+            customFieldDefinitions={customFieldDefinitions}
             initialValues={initialValues}
             submitLabel="Salvar"
             busyLabel="Salvando..."
@@ -180,19 +224,35 @@ export function LeadCard({ lead, stages, onChanged }: LeadCardProps) {
           />
         </div>
       ) : (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button type="button" size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-            Editar
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? "Excluindo..." : "Excluir"}
-          </Button>
+        <div className="mt-3 space-y-3 border-t border-border/60 pt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+            >
+              Editar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </Button>
+          </div>
+          <div>
+            <p className="text-xs font-medium">Mensagens IA</p>
+            <LeadMessages
+              workspaceId={workspaceId}
+              lead={lead}
+              campaigns={campaigns}
+              onGenerated={onChanged}
+            />
+          </div>
         </div>
       )}
     </div>

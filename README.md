@@ -14,6 +14,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - Multi-workspace com isolamento por `workspace_id` e RLS nas tabelas principais.
 - Convite interno: admin cria convite para um email; o convidado aceita e vira membro do workspace.
 - Campos personalizados de leads em JSONB para flexibilidade por workspace.
+- Definicoes de campos personalizados em `lead_field_definitions`.
 - Geracao de mensagens via Edge Function; chave da Gemini armazenada em secret do Supabase.
 - Seed de etapas do funil via trigger ao criar workspace.
 
@@ -23,6 +24,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - workspace_members
 - workspace_invites
 - funnel_stages
+- lead_field_definitions
 - leads
 - campaigns
 - lead_messages
@@ -52,10 +54,12 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - [x] Workspaces com isolamento de dados
 - [ ] Gestao de leads (CRUD + campos padrao e personalizados)
 - [x] CRUD basico de leads (campos padrao)
+- [x] Campos personalizados por workspace
+- [x] Validacao de campos obrigatorios por etapa
 - [ ] Funil de pre-vendas com etapas e Kanban
 - [x] Visualizacao de leads por etapas (sem drag and drop)
-- [ ] Campanhas de abordagem
-- [ ] Geracao de mensagens (2 a 3 variacoes)
+- [x] Campanhas de abordagem
+- [x] Geracao de mensagens (2 a 3 variacoes)
 - [ ] RLS no banco
 - [ ] Dashboard com metricas basicas
 

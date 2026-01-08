@@ -13,7 +13,11 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { CampaignsPanel } from "@/features/campaigns/campaigns-panel"
 import { LeadsBoard } from "@/features/leads/leads-board"
+import { CustomFieldsPanel } from "@/features/leads/custom-fields-panel"
+import { StageRequirementsPanel } from "@/features/leads/stage-requirements-panel"
+import { useFunnelStages } from "@/features/funnel/use-funnel-stages"
 import { WorkspaceInvites } from "@/features/workspaces/workspace-invites"
 import { useActiveWorkspaceId } from "@/features/workspaces/use-active-workspace"
 import { supabase } from "@/lib/supabase"
@@ -52,6 +56,7 @@ export function WorkspaceScreen({ session }: { session: Session }) {
   const [newWorkspaceName, setNewWorkspaceName] = React.useState("")
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const { activeWorkspaceId, setActiveWorkspaceId } = useActiveWorkspaceId()
+  const { stages } = useFunnelStages(activeWorkspaceId)
 
   const loadWorkspaces = React.useCallback(async () => {
     setLoading(true)
@@ -237,6 +242,15 @@ export function WorkspaceScreen({ session }: { session: Session }) {
               isAdmin={activeWorkspace.role === "admin"}
               onRefresh={loadWorkspaces}
             />
+            <CustomFieldsPanel
+              workspaceId={activeWorkspace.id}
+              isAdmin={activeWorkspace.role === "admin"}
+            />
+            <StageRequirementsPanel
+              workspaceId={activeWorkspace.id}
+              isAdmin={activeWorkspace.role === "admin"}
+            />
+            <CampaignsPanel workspaceId={activeWorkspace.id} stages={stages} />
             <LeadsBoard
               workspaceId={activeWorkspace.id}
               workspaceName={activeWorkspace.name}

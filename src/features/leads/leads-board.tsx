@@ -9,20 +9,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  LeadCard,
-  type LeadItem,
-} from "@/features/leads/lead-card"
-import {
-  LeadForm,
-  type FunnelStage,
-  type LeadFormValues,
-} from "@/features/leads/lead-form"
+import { useCampaigns } from "@/features/campaigns/use-campaigns"
+import { useFunnelStages } from "@/features/funnel/use-funnel-stages"
+import { LeadCard } from "@/features/leads/lead-card"
+import { buildCustomFieldsPayload, normalizeCustomFields } from "@/features/leads/lead-custom-fields"
+import { LeadForm, type LeadFormValues } from "@/features/leads/lead-form"
+import type { LeadItem } from "@/features/leads/lead-types"
+import { getMissingFields } from "@/features/leads/lead-validation"
+import { useLeadFieldDefinitions } from "@/features/leads/use-lead-field-definitions"
 import { supabase } from "@/lib/supabase"
-
-type FunnelStageWithOrder = FunnelStage & {
-  sort_order: number
-}
 
 type LeadsBoardProps = {
   workspaceId: string
@@ -36,53 +31,61 @@ type StageColumn = {
 }
 
 export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
-  const [stages, setStages] = React.useState<FunnelStageWithOrder[]>([])
   const [leads, setLeads] = React.useState<LeadItem[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
+  const [leadsLoading, setLeadsLoading] = React.useState(true)
+  const [leadsError, setLeadsError] = React.useState<string | null>(null)
   const [createResetToken, setCreateResetToken] = React.useState(0)
 
-  const loadBoard = React.useCallback(async () => {
-    setLoading(true)
-    setErrorMessage(null)
+  const {
+    stages,
+    loading: stagesLoading,
+    errorMessage: stagesError,
+    refresh: refreshStages,
+  } = useFunnelStages(workspaceId)
+  const {
+    definitions,
+    loading: fieldsLoading,
+    errorMessage: fieldsError,
+    refresh: refreshFields,
+  } = useLeadFieldDefinitions(workspaceId)
+  const {
+    campaigns,
+    loading: campaignsLoading,
+    errorMessage: campaignsError,
+    refresh: refreshCampaigns,
+  } = useCampaigns(workspaceId)
 
-    const [stagesResponse, leadsResponse] = await Promise.all([
-      supabase
-        .from("funnel_stages")
-        .select("id, name, sort_order")
-        .eq("workspace_id", workspaceId)
-        .order("sort_order", { ascending: true }),
-      supabase
-        .from("leads")
-        .select(
-          "id, name, company, job_title, stage_id, email, phone, lead_source, notes"
-        )
-        .eq("workspace_id", workspaceId)
-        .order("created_at", { ascending: false }),
-    ])
+  const loadLeads = React.useCallback(async () => {
+    setLeadsLoading(true)
+    setLeadsError(null)
 
-    if (stagesResponse.error) {
-      setErrorMessage(stagesResponse.error.message)
-      setLoading(false)
+    const { data, error } = await supabase
+      .from("leads")
+      .select(
+        "id, name, company, job_title, stage_id, email, phone, lead_source, notes, custom_fields"
+      )
+      .eq("workspace_id", workspaceId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      setLeadsError(error.message)
+      setLeadsLoading(false)
       return
     }
 
-    if (leadsResponse.error) {
-      setErrorMessage(leadsResponse.error.message)
-      setLoading(false)
-      return
-    }
-
-    setStages(stagesResponse.data ?? [])
-    setLeads(leadsResponse.data ?? [])
-    setLoading(false)
+    setLeads(data ?? [])
+    setLeadsLoading(false)
   }, [workspaceId])
 
   React.useEffect(() => {
-    loadBoard()
-  }, [loadBoard])
+    loadLeads()
+  }, [loadLeads])
 
   const defaultStageId = stages[0]?.id ?? null
+  const customFieldsInitial = React.useMemo(
+    () => normalizeCustomFields(definitions, null),
+    [definitions]
+  )
 
   const createInitialValues = React.useMemo<LeadFormValues>(
     () => ({
@@ -94,14 +97,39 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       leadSource: "",
       notes: "",
       stageId: defaultStageId,
+      customFields: customFieldsInitial,
     }),
-    [defaultStageId]
+    [customFieldsInitial, defaultStageId]
   )
 
   const handleCreateLead = async (values: LeadFormValues) => {
     const name = values.name.trim()
     if (!name) {
       return "Informe o nome do lead."
+    }
+
+    const customPayload = buildCustomFieldsPayload(values.customFields, definitions)
+
+    if (values.stageId) {
+      const stage = stages.find((item) => item.id === values.stageId)
+      const missing = getMissingFields(
+        stage?.required_fields,
+        {
+          name,
+          email: values.email,
+          phone: values.phone,
+          company: values.company,
+          job_title: values.jobTitle,
+          lead_source: values.leadSource,
+          notes: values.notes,
+          custom_fields: customPayload,
+        },
+        definitions
+      )
+
+      if (missing.length > 0) {
+        return `Campos obrigatorios: ${missing.join(", ")}`
+      }
     }
 
     const payload = {
@@ -114,6 +142,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       job_title: values.jobTitle.trim() || null,
       lead_source: values.leadSource.trim() || null,
       notes: values.notes.trim() || null,
+      custom_fields: customPayload,
     }
 
     const { error } = await supabase.from("leads").insert(payload)
@@ -123,9 +152,23 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
     }
 
     setCreateResetToken((current) => current + 1)
-    await loadBoard()
+    await loadLeads()
     return null
   }
+
+  const handleRefresh = async () => {
+    await Promise.all([
+      refreshStages(),
+      refreshFields(),
+      refreshCampaigns(),
+      loadLeads(),
+    ])
+  }
+
+  const loading =
+    leadsLoading || stagesLoading || fieldsLoading || campaignsLoading
+  const errorMessage =
+    leadsError ?? stagesError ?? fieldsError ?? campaignsError ?? null
 
   const columns = React.useMemo<StageColumn[]>(() => {
     const baseColumns = stages.map((stage) => ({
@@ -166,7 +209,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
             Leads organizados por etapa do funil.
           </p>
         </div>
-        <Button type="button" variant="outline" onClick={loadBoard} disabled={loading}>
+        <Button type="button" variant="outline" onClick={handleRefresh} disabled={loading}>
           {loading ? "Atualizando..." : "Atualizar"}
         </Button>
       </div>
@@ -189,6 +232,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
             <CardContent>
               <LeadForm
                 stages={stages}
+                customFieldDefinitions={definitions}
                 initialValues={createInitialValues}
                 submitLabel="Adicionar lead"
                 busyLabel="Adicionando..."
@@ -215,9 +259,12 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
                     {column.leads.map((lead) => (
                       <LeadCard
                         key={lead.id}
+                        workspaceId={workspaceId}
                         lead={lead}
                         stages={stages}
-                        onChanged={loadBoard}
+                        campaigns={campaigns}
+                        customFieldDefinitions={definitions}
+                        onChanged={loadLeads}
                       />
                     ))}
                   </div>

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import type { LeadFieldDefinition } from "@/features/leads/use-lead-field-definitions"
 
 export type FunnelStage = {
   id: string
@@ -26,10 +27,12 @@ export type LeadFormValues = {
   leadSource: string
   notes: string
   stageId: string | null
+  customFields: Record<string, string | boolean | null>
 }
 
 type LeadFormProps = {
   stages: FunnelStage[]
+  customFieldDefinitions?: LeadFieldDefinition[]
   initialValues: LeadFormValues
   submitLabel: string
   busyLabel?: string
@@ -41,6 +44,7 @@ type LeadFormProps = {
 
 export function LeadForm({
   stages,
+  customFieldDefinitions = [],
   initialValues,
   submitLabel,
   busyLabel,
@@ -61,6 +65,19 @@ export function LeadForm({
     setValues((current) => ({
       ...current,
       [field]: value ?? "",
+    }))
+  }
+
+  const handleCustomFieldChange = (
+    key: string,
+    value: string | boolean | null
+  ) => {
+    setValues((current) => ({
+      ...current,
+      customFields: {
+        ...current.customFields,
+        [key]: value,
+      },
     }))
   }
 
@@ -173,6 +190,66 @@ export function LeadForm({
             onChange={(event) => handleChange("notes", event.target.value)}
           />
         </div>
+        {customFieldDefinitions.length > 0 ? (
+          <div className="space-y-3 md:col-span-2">
+            <p className="text-sm font-medium">Campos personalizados</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              {customFieldDefinitions.map((field) => {
+                const rawValue = values.customFields[field.key]
+                const inputValue =
+                  rawValue === null || rawValue === undefined
+                    ? ""
+                    : String(rawValue)
+
+                if (field.field_type === "boolean") {
+                  const boolValue =
+                    rawValue === null || rawValue === undefined
+                      ? "unset"
+                      : rawValue === true
+                        ? "true"
+                        : "false"
+                  return (
+                    <div key={field.id} className="space-y-2">
+                      <Label>{field.label}</Label>
+                      <Select
+                        value={boolValue}
+                        onValueChange={(value) =>
+                          handleCustomFieldChange(
+                            field.key,
+                            value === "unset" ? null : value === "true"
+                          )
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unset">Selecionar</SelectItem>
+                          <SelectItem value="true">Sim</SelectItem>
+                          <SelectItem value="false">Nao</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div key={field.id} className="space-y-2">
+                    <Label htmlFor={`custom-${field.key}`}>{field.label}</Label>
+                    <Input
+                      id={`custom-${field.key}`}
+                      type={field.field_type === "number" ? "number" : "text"}
+                      value={inputValue}
+                      onChange={(event) =>
+                        handleCustomFieldChange(field.key, event.target.value)
+                      }
+                    />
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
       {errorMessage ? (
         <p className="text-sm text-destructive">{errorMessage}</p>
