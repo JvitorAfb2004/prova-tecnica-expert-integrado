@@ -1,7 +1,7 @@
-import { ComponentExample } from "@/components/component-example";
+import { AuthScreen } from "@/features/auth/auth-screen"
 
 export function App() {
-return <ComponentExample />;
+  return <AuthScreen />
 }
 
-export default App;
+export default App

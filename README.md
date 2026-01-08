@@ -44,7 +44,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 
 ### Obrigatorias (MVP)
 
-- [ ] Autenticacao email/senha (Supabase Auth)
+- [x] Autenticacao email/senha (Supabase Auth)
 - [ ] Workspaces com isolamento de dados
 - [ ] Gestao de leads (CRUD + campos padrao e personalizados)
 - [ ] Funil de pre-vendas com etapas e Kanban
