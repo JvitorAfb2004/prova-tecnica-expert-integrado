@@ -200,10 +200,15 @@ function parseMessages(rawText: string, variations: number) {
     }
   }
 
+  const quoted = extractQuotedStrings(cleaned)
+  if (quoted.length > 0) {
+    return quoted.slice(0, variations)
+  }
+
   const fallback = cleaned
     .split("\n")
     .map((line) => line.replace(/^[-*\d.\s]+/, "").trim())
-    .filter(Boolean)
+    .filter((line) => line && line !== "[" && line !== "]")
 
   return fallback.slice(0, variations)
 }
@@ -217,4 +222,9 @@ function stripCodeFences(text: string) {
 function extractJsonArray(text: string) {
   const match = text.match(/\[[\s\S]*\]/)
   return match ? match[0] : null
+}
+
+function extractQuotedStrings(text: string) {
+  const matches = text.match(/"([^"]+)"/g) ?? []
+  return matches.map((match) => match.replace(/"/g, "")).filter(Boolean)
 }

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -341,6 +342,13 @@ export function LeadCard({
               onSend={moveToContact}
               onGenerated={onChanged}
             />
+            <div className="flex justify-end">
+              <DialogClose asChild>
+                <Button type="button" variant="outline" size="sm">
+                  Fechar
+                </Button>
+              </DialogClose>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

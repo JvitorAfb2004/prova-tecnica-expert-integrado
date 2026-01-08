@@ -2,6 +2,17 @@ import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -45,6 +56,7 @@ export function LeadMessages({
   const [loading, setLoading] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [notice, setNotice] = React.useState<string | null>(null)
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
 
   React.useEffect(() => {
     if (selectedCampaignId) return
@@ -227,6 +239,37 @@ export function LeadMessages({
     setLoading(false)
     await onSend()
   }
+
+  const handleDeleteMessages = async () => {
+    if (!messageId) {
+      setErrorMessage("Nenhuma mensagem para excluir.")
+      setIsDeleteOpen(false)
+      return
+    }
+
+    setErrorMessage(null)
+    setNotice(null)
+    setLoading(true)
+
+    const { error } = await supabase
+      .from("lead_messages")
+      .delete()
+      .eq("id", messageId)
+
+    if (error) {
+      setErrorMessage(error.message)
+      setLoading(false)
+      return
+    }
+
+    setMessages([])
+    setSelectedIndex(null)
+    setMessageId(null)
+    setNotice("Mensagens excluidas.")
+    setLoading(false)
+    setIsDeleteOpen(false)
+    await onGenerated()
+  }
   const handleCopy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
@@ -299,6 +342,32 @@ export function LeadMessages({
         <Button type="button" size="sm" onClick={handleGenerate} disabled={loading}>
           {loading ? "Gerando..." : "Gerar mensagens"}
         </Button>
+        <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={loading || !messageId}
+            >
+              Excluir mensagens
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir mensagens?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Isso remove as mensagens geradas para este lead.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteMessages} disabled={loading}>
+                {loading ? "Excluindo..." : "Excluir"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
       {errorMessage ? (
         <p className="text-xs text-destructive">{errorMessage}</p>
