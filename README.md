@@ -35,6 +35,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - workspace_members: admin gerencia; membros podem ler.
 - workspace_invites: admin cria/gerencia; convidado le se email do JWT bater.
 - funnel_stages, leads, campaigns, lead_messages: acesso por membro do workspace.
+- Validacao de campos obrigatorios por etapa no banco (trigger em leads).
 
 ## Funcoes/Triggers
 
@@ -64,6 +65,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - [x] Responsavel pelo lead (atribuir usuario)
 - [ ] RLS no banco
 - [ ] Dashboard com metricas basicas
+- [x] Dashboard com metricas basicas
 
 ### Diferenciais
 

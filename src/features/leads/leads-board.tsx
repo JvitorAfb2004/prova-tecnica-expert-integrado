@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { useCampaigns } from "@/features/campaigns/use-campaigns"
+import { MetricsSummary } from "@/features/dashboard/metrics-summary"
 import { useFunnelStages } from "@/features/funnel/use-funnel-stages"
 import { LeadCard } from "@/features/leads/lead-card"
 import { buildCustomFieldsPayload, normalizeCustomFields } from "@/features/leads/lead-custom-fields"
@@ -265,6 +266,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
         <p className="text-sm text-muted-foreground">Carregando funil...</p>
       ) : (
         <>
+          <MetricsSummary stages={stages} leads={leads} loading={loading} />
           <Card>
             <CardHeader>
               <CardTitle>Novo lead</CardTitle>
