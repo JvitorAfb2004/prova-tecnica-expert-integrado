@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { listAvailableFields } from "@/features/leads/lead-fields"
 import { useLeadFieldDefinitions } from "@/features/leads/use-lead-field-definitions"
 import { useFunnelStages } from "@/features/funnel/use-funnel-stages"
@@ -55,7 +56,11 @@ export function StageRequirementsPanel({
           <p className="text-sm text-destructive">{fieldsError}</p>
         ) : null}
         {stagesLoading || fieldsLoading ? (
-          <p className="text-sm text-muted-foreground">Carregando...</p>
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
         ) : stages.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhuma etapa encontrada.

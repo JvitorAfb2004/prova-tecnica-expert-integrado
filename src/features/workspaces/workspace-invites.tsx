@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { supabase } from "@/lib/supabase"
 
 type WorkspaceRole = "admin" | "member"
+type InviteStatus = "pending" | "accepted" | "revoked" | "expired"
 
 type WorkspaceInviteProps = {
   session: Session
@@ -223,7 +224,9 @@ function CreateInviteCard({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-medium">{invite.email}</p>
-                    <span className="text-muted-foreground">{invite.status}</span>
+                    <span className="text-muted-foreground">
+                      {translateInviteStatus(invite.status)}
+                    </span>
                   </div>
                   <div className="mt-1 flex flex-wrap gap-2 text-muted-foreground">
                     <span>Papel: {invite.role}</span>
@@ -329,8 +332,21 @@ type WorkspaceInviteRow = {
   id: string
   email: string
   role: WorkspaceRole
-  status: string
+  status: InviteStatus
   token: string
   created_at: string
   expires_at: string
+}
+
+function translateInviteStatus(status: InviteStatus) {
+  switch (status) {
+    case "accepted":
+      return "Aceito"
+    case "revoked":
+      return "Revogado"
+    case "expired":
+      return "Expirado"
+    default:
+      return "Pendente"
+  }
 }

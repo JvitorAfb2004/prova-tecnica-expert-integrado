@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { reservedLeadFieldKeys } from "@/features/leads/lead-fields"
 import {
   type LeadFieldType,
@@ -129,7 +130,11 @@ export function CustomFieldsPanel({
         ) : null}
 
         {loading ? (
-          <p className="text-sm text-muted-foreground">Carregando...</p>
+          <div className="space-y-2">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
         ) : definitions.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Nenhum campo personalizado ainda.

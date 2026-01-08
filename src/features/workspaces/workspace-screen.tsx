@@ -151,11 +151,12 @@ export function WorkspaceScreen({ session }: { session: Session }) {
   const activeWorkspace = workspaces.find(
     (workspace) => workspace.id === activeWorkspaceId
   )
+  const isAdmin = activeWorkspace?.role === "admin"
   const navItems = [
     { label: "Workspaces", to: "/app/workspaces" },
     { label: "Convites", to: "/app/convites" },
-    { label: "Campos", to: "/app/campos" },
-    { label: "Requisitos", to: "/app/requisitos" },
+    ...(isAdmin ? [{ label: "Campos", to: "/app/campos" }] : []),
+    ...(isAdmin ? [{ label: "Requisitos", to: "/app/requisitos" }] : []),
     { label: "Campanhas", to: "/app/campanhas" },
     { label: "Leads", to: "/app/leads" },
     { label: "Criar workspace", to: "/app/criar-workspace" },
@@ -167,6 +168,17 @@ export function WorkspaceScreen({ session }: { session: Session }) {
         <CardTitle>Selecione um workspace</CardTitle>
         <CardDescription>
           Escolha um workspace ativo para acessar este conteudo.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  )
+
+  const adminOnlyCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Apenas admins</CardTitle>
+        <CardDescription>
+          Seu perfil nao tem permissao para acessar esta area.
         </CardDescription>
       </CardHeader>
     </Card>
@@ -334,10 +346,14 @@ export function WorkspaceScreen({ session }: { session: Session }) {
           path="campos"
           element={
             activeWorkspace ? (
-              <CustomFieldsPanel
-                workspaceId={activeWorkspace.id}
-                isAdmin={activeWorkspace.role === "admin"}
-              />
+              isAdmin ? (
+                <CustomFieldsPanel
+                  workspaceId={activeWorkspace.id}
+                  isAdmin={isAdmin}
+                />
+              ) : (
+                adminOnlyCard
+              )
             ) : (
               emptyWorkspaceCard
             )
@@ -347,10 +363,14 @@ export function WorkspaceScreen({ session }: { session: Session }) {
           path="requisitos"
           element={
             activeWorkspace ? (
-              <StageRequirementsPanel
-                workspaceId={activeWorkspace.id}
-                isAdmin={activeWorkspace.role === "admin"}
-              />
+              isAdmin ? (
+                <StageRequirementsPanel
+                  workspaceId={activeWorkspace.id}
+                  isAdmin={isAdmin}
+                />
+              ) : (
+                adminOnlyCard
+              )
             ) : (
               emptyWorkspaceCard
             )

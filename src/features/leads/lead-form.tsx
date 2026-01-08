@@ -69,6 +69,17 @@ export function LeadForm({
     setValues(initialValues)
   }, [initialValues, resetToken])
 
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11)
+    if (digits.length === 0) return ""
+    if (digits.length <= 2) return `(${digits}`
+    if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+    if (digits.length <= 10) {
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+    }
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  }
+
   const handleChange = (field: keyof LeadFormValues, value: string | null) => {
     setValues((current) => ({
       ...current,
@@ -159,7 +170,9 @@ export function LeadForm({
             id="lead-phone"
             placeholder="+55 11 99999-9999"
             value={values.phone}
-            onChange={(event) => handleChange("phone", event.target.value)}
+            onChange={(event) =>
+              handleChange("phone", formatPhone(event.target.value))
+            }
           />
         </div>
         <div className="space-y-2">
