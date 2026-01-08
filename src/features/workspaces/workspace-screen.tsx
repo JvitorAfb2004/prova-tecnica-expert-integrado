@@ -380,7 +380,7 @@ export function WorkspaceScreen({ session }: { session: Session }) {
           path="campanhas"
           element={
             activeWorkspace ? (
-              <CampaignsPanel workspaceId={activeWorkspace.id} stages={stages} />
+              <CampaignsPanel workspaceId={activeWorkspace.id} />
             ) : (
               emptyWorkspaceCard
             )

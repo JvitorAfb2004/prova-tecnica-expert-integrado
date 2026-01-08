@@ -11,47 +11,36 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import type { FunnelStage } from "@/features/funnel/use-funnel-stages"
 import { useCampaigns } from "@/features/campaigns/use-campaigns"
 import { supabase } from "@/lib/supabase"
 
 type CampaignsPanelProps = {
   workspaceId: string
-  stages: FunnelStage[]
 }
 
 type CampaignFormValues = {
   name: string
   context: string
   prompt: string
-  triggerStageId: string | null
 }
 
-export function CampaignsPanel({ workspaceId, stages }: CampaignsPanelProps) {
+export function CampaignsPanel({ workspaceId }: CampaignsPanelProps) {
   const { campaigns, loading, errorMessage, refresh } =
     useCampaigns(workspaceId)
   const [values, setValues] = React.useState<CampaignFormValues>({
     name: "",
     context: "",
     prompt: "",
-    triggerStageId: null,
   })
   const [notice, setNotice] = React.useState<string | null>(null)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  const handleChange = (field: keyof CampaignFormValues, value: string | null) => {
+  const handleChange = (field: keyof CampaignFormValues, value: string) => {
     setValues((current) => ({
       ...current,
-      [field]: value ?? "",
+      [field]: value,
     }))
   }
 
@@ -82,7 +71,6 @@ export function CampaignsPanel({ workspaceId, stages }: CampaignsPanelProps) {
       name,
       context,
       prompt,
-      trigger_stage_id: values.triggerStageId,
       is_active: true,
     })
 
@@ -96,7 +84,6 @@ export function CampaignsPanel({ workspaceId, stages }: CampaignsPanelProps) {
       name: "",
       context: "",
       prompt: "",
-      triggerStageId: null,
     })
     setNotice("Campanha criada.")
     setIsSubmitting(false)
@@ -171,13 +158,6 @@ export function CampaignsPanel({ workspaceId, stages }: CampaignsPanelProps) {
                     Excluir
                   </Button>
                 </div>
-                {campaign.trigger_stage_id ? (
-                  <p className="text-xs text-muted-foreground">
-                    Gatilho:{" "}
-                    {stages.find((stage) => stage.id === campaign.trigger_stage_id)
-                      ?.name ?? "Etapa removida"}
-                  </p>
-                ) : null}
               </div>
             ))}
           </div>
@@ -213,30 +193,6 @@ export function CampaignsPanel({ workspaceId, stages }: CampaignsPanelProps) {
               onChange={(event) => handleChange("prompt", event.target.value)}
               required
             />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="campaign-trigger">Etapa gatilho (opcional)</Label>
-            <Select
-              value={values.triggerStageId ?? "none"}
-              onValueChange={(value) =>
-                setValues((current) => ({
-                  ...current,
-                  triggerStageId: value === "none" ? null : value,
-                }))
-              }
-            >
-              <SelectTrigger id="campaign-trigger" className="w-full">
-                <SelectValue placeholder="Sem gatilho" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem gatilho</SelectItem>
-                {stages.map((stage) => (
-                  <SelectItem key={stage.id} value={stage.id}>
-                    {stage.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Criando..." : "Criar campanha"}
