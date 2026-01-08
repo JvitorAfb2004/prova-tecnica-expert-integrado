@@ -121,6 +121,7 @@ npm run dev
   - `variations` (number, opcional, 1-5)
 - Response JSON:
   - `messages` (string[])
+- Limite: a funcao faz 1 requisicao ao Gemini por geracao; no free tier ha limite diario de requests.
 
 ## Deploy
 

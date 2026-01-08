@@ -287,35 +287,11 @@ async function generateMessages({
     variations,
     temperature: 0.4,
   })
-  let messages = filterMessages(
+  const messages = filterMessages(
     collectMessages(candidateTexts.length > 0 ? candidateTexts : [""], variations)
   )
 
-  if (messages.length >= variations) {
-    return messages.slice(0, variations)
-  }
-
-  const missing = variations - messages.length
-  const retryPrompt = [
-    prompt,
-    `A resposta anterior foi invalida.`,
-    `Gere apenas ${missing} mensagens novas.`,
-    `Nao repita mensagens anteriores.`,
-    `Nao use placeholders.`,
-  ].join("\n")
-
-  const retryTexts = await callGemini({
-    apiKey,
-    model,
-    prompt: retryPrompt,
-    variations: missing,
-    temperature: 0.2,
-  })
-  const retryMessages = filterMessages(
-    collectMessages(retryTexts.length > 0 ? retryTexts : [""], missing)
-  )
-
-  return [...messages, ...retryMessages].slice(0, variations)
+  return messages.slice(0, variations)
 }
 
 async function callGemini({
