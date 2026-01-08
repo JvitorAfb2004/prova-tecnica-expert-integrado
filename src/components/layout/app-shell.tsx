@@ -44,7 +44,7 @@ export function AppShell({
   const [isOpen, setIsOpen] = React.useState(false)
 
   const sidebar = (
-    <div className="flex h-full flex-col gap-6">
+    <div className="flex h-full min-w-0 flex-col gap-6">
       <div className="px-4 pt-6">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">
           SDR CRM
@@ -92,7 +92,7 @@ export function AppShell({
             to={item.to}
             className={({ isActive }) =>
               cn(
-                "block rounded-lg px-3 py-2 text-sm text-foreground",
+                "block w-full min-w-0 truncate rounded-lg px-3 py-2 text-sm text-foreground",
                 isActive
                   ? "bg-foreground text-background font-medium hover:bg-foreground hover:text-background"
                   : "hover:bg-muted/80"
@@ -107,7 +107,9 @@ export function AppShell({
 
       <div className="border-t border-border/60 px-4 py-4">
         <p className="text-xs text-muted-foreground">Conta</p>
-        <p className="text-sm font-medium">{userEmail}</p>
+        <p className="truncate text-sm font-medium" title={userEmail}>
+          {userEmail}
+        </p>
         <Button
           type="button"
           size="sm"
@@ -124,7 +126,7 @@ export function AppShell({
   return (
     <div className="min-h-screen bg-muted/40">
       <div className="flex min-h-screen">
-        <aside className="sticky top-0 hidden h-screen w-52 border-r border-border/60 bg-background/90 lg:flex">
+        <aside className="sticky top-0 hidden h-screen w-60 border-r border-border/60 bg-background/90 lg:flex">
           {sidebar}
         </aside>
 
@@ -160,7 +162,7 @@ export function AppShell({
       />
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 h-full w-60 border-r border-border/60 bg-background/95 shadow-lg transition-transform lg:hidden",
+          "fixed left-0 top-0 z-50 h-full w-64 border-r border-border/60 bg-background/95 shadow-lg transition-transform lg:hidden",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
