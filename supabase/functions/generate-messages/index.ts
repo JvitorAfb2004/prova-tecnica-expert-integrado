@@ -63,40 +63,18 @@ Deno.serve(async (req) => {
   const variations = clampVariations(payload.variations ?? 3)
   const prompt = buildPrompt(payload.lead, payload.campaign, variations, payload.locale)
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 768,
-          candidateCount: variations,
-        },
-      }),
-    }
-  )
-
-  if (!response.ok) {
-    const errorBody = await response.text()
-    return jsonResponse({ error: "gemini_error", details: errorBody }, 500)
+  let messages: string[] = []
+  try {
+    messages = await generateMessages({
+      apiKey,
+      model,
+      prompt,
+      variations,
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown_error"
+    return jsonResponse({ error: "gemini_error", details: message }, 500)
   }
-
-  const data = await response.json()
-  const candidateTexts = (data?.candidates ?? [])
-    .map((candidate: { content?: { parts?: { text?: string }[] } }) =>
-      candidate?.content?.parts?.[0]?.text ?? ""
-    )
-    .filter((text: string) => text && text.trim().length > 0)
-
-  const messages = collectMessages(
-    candidateTexts.length > 0 ? candidateTexts : [""],
-    variations
-  )
 
   if (messages.length === 0) {
     return jsonResponse({ error: "empty_generation" }, 502)
@@ -160,6 +138,9 @@ function buildPrompt(
     `Responda apenas com um JSON array de strings.`,
     `Formato obrigatorio: ["Mensagem 1","Mensagem 2","Mensagem 3"].`,
     `Nao inclua markdown, comentarios, nem texto fora do JSON.`,
+    `Nao use placeholders como "[Seu Nome]" ou "[Sua Empresa]".`,
+    `Use apenas os dados fornecidos no contexto e do lead.`,
+    `Finalize cada mensagem com pontuacao.`,
   ].join("\n")
 }
 
@@ -279,4 +260,105 @@ function collectMessages(texts: string[], variations: number) {
   }
 
   return collected.slice(0, variations)
+}
+
+async function generateMessages({
+  apiKey,
+  model,
+  prompt,
+  variations,
+}: {
+  apiKey: string
+  model: string
+  prompt: string
+  variations: number
+}) {
+  const candidateTexts = await callGemini({
+    apiKey,
+    model,
+    prompt,
+    variations,
+    temperature: 0.4,
+  })
+  let messages = filterMessages(
+    collectMessages(candidateTexts.length > 0 ? candidateTexts : [""], variations)
+  )
+
+  if (messages.length >= variations) {
+    return messages.slice(0, variations)
+  }
+
+  const missing = variations - messages.length
+  const retryPrompt = [
+    prompt,
+    `A resposta anterior foi invalida.`,
+    `Gere apenas ${missing} mensagens novas.`,
+    `Nao repita mensagens anteriores.`,
+    `Nao use placeholders.`,
+  ].join("\n")
+
+  const retryTexts = await callGemini({
+    apiKey,
+    model,
+    prompt: retryPrompt,
+    variations: missing,
+    temperature: 0.2,
+  })
+  const retryMessages = filterMessages(
+    collectMessages(retryTexts.length > 0 ? retryTexts : [""], missing)
+  )
+
+  return [...messages, ...retryMessages].slice(0, variations)
+}
+
+async function callGemini({
+  apiKey,
+  model,
+  prompt,
+  variations,
+  temperature,
+}: {
+  apiKey: string
+  model: string
+  prompt: string
+  variations: number
+  temperature: number
+}) {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature,
+          maxOutputTokens: 512,
+          candidateCount: variations,
+        },
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(`gemini_error:${errorBody}`)
+  }
+
+  const data = await response.json()
+  return (data?.candidates ?? [])
+    .map((candidate: { content?: { parts?: { text?: string }[] } }) =>
+      candidate?.content?.parts?.[0]?.text ?? ""
+    )
+    .filter((text: string) => text && text.trim().length > 0)
+}
+
+function filterMessages(messages: string[]) {
+  return messages
+    .map((message) => message.trim())
+    .filter((message) => message.length > 0)
+    .filter((message) => !message.includes("["))
+    .filter((message) => /[.!?]$/.test(message))
 }
