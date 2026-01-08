@@ -59,7 +59,7 @@ export function AppShell({
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selecionar workspace" />
               </SelectTrigger>
-              <SelectContent>
+            <SelectContent>
                 {workspaces.map((workspace) => (
                   <SelectItem key={workspace.id} value={workspace.id}>
                     {workspace.name}
@@ -67,18 +67,10 @@ export function AppShell({
                 ))}
               </SelectContent>
             </Select>
-            {workspaceRole ? (
-              <Badge variant="secondary">
-                {workspaceRole === "admin" ? "Admin" : "Membro"}
-              </Badge>
-            ) : null}
           </div>
         ) : workspaceName ? (
           <div className="mt-3 space-y-1">
             <p className="text-sm font-medium">{workspaceName}</p>
-            {workspaceRole ? (
-              <Badge variant="secondary">{workspaceRole}</Badge>
-            ) : null}
           </div>
         ) : (
           <p className="mt-3 text-xs text-muted-foreground">
@@ -112,6 +104,11 @@ export function AppShell({
         <p className="truncate text-sm font-medium" title={userEmail}>
           {userEmail}
         </p>
+        {workspaceRole ? (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Perfil: {workspaceRole === "admin" ? "Admin" : "Membro"}
+          </p>
+        ) : null}
         <Button
           type="button"
           size="sm"

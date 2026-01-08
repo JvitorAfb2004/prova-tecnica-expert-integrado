@@ -69,8 +69,11 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
   const [ownersLoading, setOwnersLoading] = React.useState(true)
   const [ownersError, setOwnersError] = React.useState<string | null>(null)
 
-  const loadLeads = React.useCallback(async () => {
-    setLeadsLoading(true)
+  const loadLeads = React.useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false
+    if (!silent) {
+      setLeadsLoading(true)
+    }
     setLeadsError(null)
 
     const { data, error } = await supabase
@@ -83,12 +86,16 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
 
     if (error) {
       setLeadsError(error.message)
-      setLeadsLoading(false)
+      if (!silent) {
+        setLeadsLoading(false)
+      }
       return
     }
 
     setLeads((data ?? []) as LeadItem[])
-    setLeadsLoading(false)
+    if (!silent) {
+      setLeadsLoading(false)
+    }
   }, [workspaceId])
 
   React.useEffect(() => {
@@ -196,7 +203,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
     }
 
     setCreateResetToken((current) => current + 1)
-    await loadLeads()
+    await loadLeads({ silent: true })
     setIsCreateOpen(false)
     return null
   }
@@ -253,6 +260,11 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
     return baseColumns
   }, [leads, stages])
 
+  const refreshLeadsSilently = React.useCallback(
+    () => loadLeads({ silent: true }),
+    [loadLeads]
+  )
+
   const updateLeadStage = async (leadId: string, stageId: string | null) => {
     const lead = leads.find((item) => item.id === leadId)
     if (!lead) return
@@ -290,7 +302,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       return
     }
 
-    await loadLeads()
+    await loadLeads({ silent: true })
   }
 
   const handleDragStart = (
@@ -426,7 +438,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
                         campaigns={campaigns}
                         customFieldDefinitions={definitions}
                         owners={owners}
-                        onChanged={loadLeads}
+                        onChanged={refreshLeadsSilently}
                         onDragStart={handleDragStart}
                       />
                     ))}
