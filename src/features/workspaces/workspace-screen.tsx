@@ -13,7 +13,9 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { LeadsBoard } from "@/features/leads/leads-board"
 import { WorkspaceInvites } from "@/features/workspaces/workspace-invites"
+import { useActiveWorkspaceId } from "@/features/workspaces/use-active-workspace"
 import { supabase } from "@/lib/supabase"
 
 type WorkspaceRole = "admin" | "member"
@@ -228,12 +230,18 @@ export function WorkspaceScreen({ session }: { session: Session }) {
         </Card>
 
         {activeWorkspace ? (
-          <WorkspaceInvites
-            session={session}
-            workspaceId={activeWorkspace.id}
-            isAdmin={activeWorkspace.role === "admin"}
-            onRefresh={loadWorkspaces}
-          />
+          <>
+            <WorkspaceInvites
+              session={session}
+              workspaceId={activeWorkspace.id}
+              isAdmin={activeWorkspace.role === "admin"}
+              onRefresh={loadWorkspaces}
+            />
+            <LeadsBoard
+              workspaceId={activeWorkspace.id}
+              workspaceName={activeWorkspace.name}
+            />
+          </>
         ) : null}
 
         <Card>
@@ -279,34 +287,5 @@ function mapWorkspaceRow(row: WorkspaceMemberRow): WorkspaceItem | null {
     name: workspace.name,
     role: row.role,
     createdAt: workspace.created_at,
-  }
-}
-
-function useActiveWorkspaceId() {
-  const [activeWorkspaceId, setActiveWorkspaceId] = React.useState<string | null>(
-    null
-  )
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") return
-    const stored = window.localStorage.getItem("active_workspace_id")
-    if (stored) {
-      setActiveWorkspaceId(stored)
-    }
-  }, [])
-
-  const handleSetActiveWorkspace = React.useCallback((next: string | null) => {
-    setActiveWorkspaceId(next)
-    if (typeof window === "undefined") return
-    if (next) {
-      window.localStorage.setItem("active_workspace_id", next)
-    } else {
-      window.localStorage.removeItem("active_workspace_id")
-    }
-  }, [])
-
-  return {
-    activeWorkspaceId,
-    setActiveWorkspaceId: handleSetActiveWorkspace,
   }
 }
