@@ -1,6 +1,25 @@
 import * as React from "react"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   Select,
   SelectContent,
@@ -26,6 +45,7 @@ type LeadCardProps = {
   customFieldDefinitions: LeadFieldDefinition[]
   owners: OwnerOption[]
   onChanged: () => Promise<void>
+  onDragStart: (event: React.DragEvent<HTMLDivElement>, leadId: string) => void
 }
 
 export function LeadCard({
@@ -36,8 +56,10 @@ export function LeadCard({
   customFieldDefinitions,
   owners,
   onChanged,
+  onDragStart,
 }: LeadCardProps) {
   const [isEditing, setIsEditing] = React.useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
   const [isUpdatingStage, setIsUpdatingStage] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
@@ -130,7 +152,6 @@ export function LeadCard({
   }
 
   const handleDelete = async () => {
-    if (!window.confirm("Excluir este lead?")) return
     setErrorMessage(null)
     setIsDeleting(true)
 
@@ -146,6 +167,7 @@ export function LeadCard({
     }
 
     setIsDeleting(false)
+    setIsDeleteOpen(false)
     await onChanged()
   }
 
@@ -204,7 +226,11 @@ export function LeadCard({
   const ownerLabel = owners.find((owner) => owner.id === lead.owner_id)?.email
 
   return (
-    <div className="rounded-lg border border-border/60 bg-card px-3 py-2">
+    <div
+      className="rounded-lg border border-border/60 bg-card px-3 py-2 cursor-grab active:cursor-grabbing"
+      draggable
+      onDragStart={(event) => onDragStart(event, lead.id)}
+    >
       <div className="space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
@@ -264,53 +290,68 @@ export function LeadCard({
         ) : null}
       </div>
 
-      {isEditing ? (
-        <div className="mt-3 border-t border-border/60 pt-3">
-          <LeadForm
-            stages={stages}
-            customFieldDefinitions={customFieldDefinitions}
-            initialValues={initialValues}
-            submitLabel="Salvar"
-            busyLabel="Salvando..."
-            showStage={false}
-            owners={owners}
-            onSubmit={handleUpdate}
-            onCancel={() => setIsEditing(false)}
+      <div className="mt-3 space-y-3 border-t border-border/60 pt-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Dialog open={isEditing} onOpenChange={setIsEditing}>
+            <DialogTrigger asChild>
+              <Button type="button" size="sm" variant="outline">
+                Editar
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Editar lead</DialogTitle>
+                <DialogDescription>
+                  Atualize as informacoes do lead.
+                </DialogDescription>
+              </DialogHeader>
+              <LeadForm
+                stages={stages}
+                customFieldDefinitions={customFieldDefinitions}
+                initialValues={initialValues}
+                submitLabel="Salvar"
+                busyLabel="Salvando..."
+                showStage={false}
+                owners={owners}
+                onSubmit={handleUpdate}
+                onCancel={() => setIsEditing(false)}
+              />
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+            <AlertDialogTrigger asChild>
+              <Button type="button" size="sm" variant="ghost">
+                Excluir
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir lead?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Essa acao nao pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting ? "Excluindo..." : "Excluir"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+        <div>
+          <p className="text-xs font-medium">Mensagens IA</p>
+          <LeadMessages
+            workspaceId={workspaceId}
+            lead={lead}
+            campaigns={campaigns}
+            onSend={moveToContact}
+            onGenerated={onChanged}
           />
         </div>
-      ) : (
-        <div className="mt-3 space-y-3 border-t border-border/60 pt-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setIsEditing(true)}
-            >
-              Editar
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Excluindo..." : "Excluir"}
-            </Button>
-          </div>
-          <div>
-            <p className="text-xs font-medium">Mensagens IA</p>
-            <LeadMessages
-              workspaceId={workspaceId}
-              lead={lead}
-              campaigns={campaigns}
-              onSend={moveToContact}
-              onGenerated={onChanged}
-            />
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

@@ -253,6 +253,69 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
     return baseColumns
   }, [leads, stages])
 
+  const updateLeadStage = async (leadId: string, stageId: string | null) => {
+    const lead = leads.find((item) => item.id === leadId)
+    if (!lead) return
+
+    if (stageId) {
+      const stage = stages.find((item) => item.id === stageId)
+      const missing = getMissingFields(
+        stage?.required_fields,
+        {
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+          company: lead.company,
+          job_title: lead.job_title,
+          lead_source: lead.lead_source,
+          notes: lead.notes,
+          custom_fields: lead.custom_fields,
+        },
+        definitions
+      )
+
+      if (missing.length > 0) {
+        setLeadsError(`Campos obrigatorios: ${missing.join(", ")}`)
+        return
+      }
+    }
+
+    const { error } = await supabase
+      .from("leads")
+      .update({ stage_id: stageId })
+      .eq("id", leadId)
+
+    if (error) {
+      setLeadsError(error.message)
+      return
+    }
+
+    await loadLeads()
+  }
+
+  const handleDragStart = (
+    event: React.DragEvent<HTMLDivElement>,
+    leadId: string
+  ) => {
+    event.dataTransfer.setData("text/plain", leadId)
+    event.dataTransfer.effectAllowed = "move"
+  }
+
+  const handleDrop = (
+    event: React.DragEvent<HTMLDivElement>,
+    stageId: string | null
+  ) => {
+    event.preventDefault()
+    const leadId = event.dataTransfer.getData("text/plain")
+    if (!leadId) return
+    void updateLeadStage(leadId, stageId)
+  }
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = "move"
+  }
+
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -338,6 +401,13 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
               <div
                 key={column.id}
                 className="flex min-h-[240px] flex-col gap-3 rounded-xl border border-border/60 bg-background/80 p-3"
+                onDragOver={handleDragOver}
+                onDrop={(event) =>
+                  handleDrop(
+                    event,
+                    column.id === "unassigned" ? null : column.id
+                  )
+                }
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-medium">{column.name}</p>
@@ -357,6 +427,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
                         customFieldDefinitions={definitions}
                         owners={owners}
                         onChanged={loadLeads}
+                        onDragStart={handleDragStart}
                       />
                     ))}
                   </div>

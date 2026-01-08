@@ -68,7 +68,9 @@ export function AppShell({
               </SelectContent>
             </Select>
             {workspaceRole ? (
-              <Badge variant="secondary">{workspaceRole}</Badge>
+              <Badge variant="secondary">
+                {workspaceRole === "admin" ? "Admin" : "Membro"}
+              </Badge>
             ) : null}
           </div>
         ) : workspaceName ? (
