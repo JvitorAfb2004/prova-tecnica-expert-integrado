@@ -15,6 +15,30 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - Convite interno: admin cria convite para um email; o convidado aceita e vira membro do workspace.
 - Campos personalizados de leads em JSONB para flexibilidade por workspace.
 - Geracao de mensagens via Edge Function; chave da Gemini armazenada em secret do Supabase.
+- Seed de etapas do funil via trigger ao criar workspace.
+
+## Modelo de dados (Supabase)
+
+- workspaces
+- workspace_members
+- workspace_invites
+- funnel_stages
+- leads
+- campaigns
+- lead_messages
+
+## Seguranca (RLS)
+
+- workspaces: membro pode ler; admin atualiza/remove.
+- workspace_members: admin gerencia; membros podem ler.
+- workspace_invites: admin cria/gerencia; convidado le se email do JWT bater.
+- funnel_stages, leads, campaigns, lead_messages: acesso por membro do workspace.
+
+## Funcoes/Triggers
+
+- `is_workspace_member`, `is_workspace_admin`
+- `handle_workspace_created` (membership admin + etapas default)
+- `accept_workspace_invite(token)` (convite interno)
 
 ## Funcionalidades
 
