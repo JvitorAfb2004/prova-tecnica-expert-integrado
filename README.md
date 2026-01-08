@@ -1,6 +1,12 @@
-# Prova tecnica — SDR CRM com IA
+# Prova tecnica - SDR CRM com IA
 
 Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de mensagens personalizadas via IA. O foco e entregar um MVP funcional com multi-workspace, RLS e fluxo de convites.
+
+## Links
+
+- Repositorio: https://github.com/JvitorAfb2004/prova-tecnica-expert-integrado
+- Aplicacao publicada: (preencher)
+- Video: (preencher)
 
 ## Stack
 
@@ -10,80 +16,90 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - Backend: Supabase (Postgres, Auth, Edge Functions)
 - IA: Google Gemini 2.5 Flash
 
-## Decisoes tecnicas
-
-- Multi-workspace com isolamento por `workspace_id` e RLS nas tabelas principais.
-- Convite interno: admin cria convite para um email; o convidado aceita e vira membro do workspace.
-- Campos personalizados de leads em JSONB para flexibilidade por workspace.
-- Definicoes de campos personalizados em `lead_field_definitions`.
-- Geracao de mensagens via Edge Function; chave da Gemini armazenada em secret do Supabase.
-- Seed de etapas do funil via trigger ao criar workspace.
-- Navegacao por rotas em `/app/*` para separar seções do painel.
-- Sessao do Supabase reafirmada no login para garantir RLS em operacoes de escrita.
-- Client Supabase com persistencia de sessao explicita e refresh automatico.
-- Criacao de workspace via RPC `create_workspace` (security definer) para evitar falha de RLS no insert.
-- Mensagens IA em modal de lead e chamada com JWT explicito na Edge Function.
-
-## Modelo de dados (Supabase)
-
-- workspaces
-- workspace_members
-- workspace_invites
-- funnel_stages
-- lead_field_definitions
-- leads
-- campaigns
-- lead_messages
-
-## Seguranca (RLS)
-
-- workspaces: membro pode ler; admin atualiza/remove.
-- workspaces (insert): permite `created_by` nulo para usar default `auth.uid()`.
-- workspace_members: admin gerencia; membros podem ler.
-- workspace_invites: admin cria/gerencia; convidado le se email do JWT bater.
-- funnel_stages, leads, campaigns, lead_messages: acesso por membro do workspace.
-- Validacao de campos obrigatorios por etapa no banco (trigger em leads).
-
-## Funcoes/Triggers
-
-- `is_workspace_member`, `is_workspace_admin`
-- `handle_workspace_created` (membership admin + etapas default)
-- `accept_workspace_invite(token)` (convite interno)
-
-## Migrations
-
-- SQL versionado em `supabase/migrations`
-
 ## Funcionalidades
 
-### Obrigatorias (MVP)
+### MVP (implementado)
 
 - [x] Autenticacao email/senha (Supabase Auth)
 - [x] Workspaces com isolamento de dados
-- [ ] Gestao de leads (CRUD + campos padrao e personalizados)
-- [x] CRUD basico de leads (campos padrao)
-- [x] Campos personalizados por workspace
-- [x] Validacao de campos obrigatorios por etapa
-- [ ] Funil de pre-vendas com etapas e Kanban
-- [x] Visualizacao de leads por etapas (sem drag and drop)
+- [x] Multi-workspace por usuario
+- [x] Convites de usuarios com papeis (admin/membro)
+- [x] CRUD de leads (campos padrao)
+- [x] Campos personalizados por workspace (JSONB)
+- [x] Responsavel pelo lead (opcional)
+- [x] Funil com etapas e visualizacao em Kanban
+- [x] Drag and drop de leads entre etapas
 - [x] Campanhas de abordagem
-- [x] Geracao de mensagens (2 a 3 variacoes)
-- [x] Envio simulado com movimentacao para "Tentando Contato"
-- [x] Responsavel pelo lead (atribuir usuario)
-- [ ] RLS no banco
-- [ ] Dashboard com metricas basicas
-- [x] Dashboard com metricas basicas
+- [x] Geracao de mensagens IA (2-3 variacoes)
+- [x] Envio simulado movendo para "Tentando Contato"
+- [x] Regras de transicao por etapa (campos obrigatorios)
+- [x] Dashboard com metricas basicas por etapa
+- [x] RLS para isolamento por workspace
 
-### Diferenciais
+### Diferenciais (nao implementados)
 
 - [ ] Geracao automatica por etapa gatilho
-- [ ] Edicao de funil (criar/editar etapas)
-- [x] Multi-workspace por usuario
-- [x] Convite de usuarios com papeis
-- [ ] Historico de atividades
+- [ ] Edicao completa do funil (criar/editar etapas)
+- [ ] Historico de atividades do lead
 - [ ] Historico de mensagens enviadas
 - [ ] Filtros e busca de leads
-- [ ] Metricas avancadas
+- [ ] Metricas avancadas (conversao, por periodo, por campanha)
+
+## Decisoes tecnicas
+
+- Multi-workspace com isolamento por `workspace_id` e RLS nas tabelas principais.
+- Convite interno e seguro: admin gera token, convidado aceita via RPC com validacao de email.
+- Campos personalizados de leads em `jsonb` para flexibilidade por workspace.
+- Definicoes de campos personalizados em `lead_field_definitions`.
+- Regras de transicao por etapa: configuracao de campos obrigatorios por etapa, validacao no front e trigger no banco.
+- Criacao de workspace via RPC `create_workspace` (security definer) para evitar falha de RLS no insert.
+- Geracao de mensagens via Edge Function; chave da Gemini armazenada em secret do Supabase.
+
+## Arquitetura e dados (Supabase)
+
+### Tabelas principais
+
+- `workspaces`: empresas/equipes.
+- `workspace_members`: usuarios vinculados ao workspace com papel (admin/member).
+- `workspace_invites`: convites com token e status.
+- `funnel_stages`: etapas do funil com `required_fields`.
+- `lead_field_definitions`: definicoes de campos customizados.
+- `leads`: leads do workspace com `custom_fields` em JSONB.
+- `campaigns`: campanhas de abordagem.
+- `lead_messages`: sugestoes geradas (draft/sent).
+
+### Funcoes/Triggers
+
+- `is_workspace_member`, `is_workspace_admin`: controle de acesso.
+- `handle_workspace_created`: cria membership admin e etapas padrao.
+- `create_workspace(p_name)`: cria workspace via RPC.
+- `accept_workspace_invite(p_token)`: aceita convite por token.
+- `list_workspace_members(p_workspace_id)`: lista membros para atribuir responsavel.
+- `validate_lead_stage_requirements`: bloqueia mudanca de etapa sem campos obrigatorios.
+
+### RLS (resumo)
+
+- `workspaces`: membro le; admin atualiza/remove.
+- `workspace_members`: admin gerencia; membros leem.
+- `workspace_invites`: admin gerencia; convidado le se email do JWT bater.
+- `funnel_stages`, `leads`, `campaigns`, `lead_messages`, `lead_field_definitions`: acesso por membro do workspace.
+
+## Edge Functions
+
+### generate-messages
+
+- Endpoint: `POST /functions/v1/generate-messages`
+- Request JSON:
+  - `lead.name` (string, obrigatorio)
+  - `lead.email`, `lead.phone`, `lead.company`, `lead.job_title`, `lead.lead_source`, `lead.notes` (opcional)
+  - `lead.custom_fields` (objeto, opcional)
+  - `campaign.name` (string, obrigatorio)
+  - `campaign.context` (string ou objeto, obrigatorio)
+  - `campaign.prompt` (string ou objeto, obrigatorio)
+  - `variations` (number, opcional, 1-5)
+- Response JSON:
+  - `messages` (string[])
+- Limite: a funcao faz 1 requisicao ao Gemini por geracao; no free tier ha limite diario de requests.
 
 ## Como rodar localmente
 
@@ -108,25 +124,17 @@ npm run dev
 - `GEMINI_API_KEY` (secret no Supabase)
 - `GEMINI_MODEL` (opcional, default `gemini-2.5-flash`)
 
-## Edge Function: generate-messages
+## Scripts
 
-- Endpoint: `POST /functions/v1/generate-messages`
-- Request JSON:
-  - `lead.name` (string, obrigatorio)
-  - `lead.email`, `lead.phone`, `lead.company`, `lead.job_title`, `lead.lead_source`, `lead.notes` (opcional)
-  - `lead.custom_fields` (objeto, opcional)
-  - `campaign.name` (string, obrigatorio)
-  - `campaign.context` (string ou objeto, obrigatorio)
-  - `campaign.prompt` (string ou objeto, obrigatorio)
-  - `variations` (number, opcional, 1-5)
-- Response JSON:
-  - `messages` (string[])
-- Limite: a funcao faz 1 requisicao ao Gemini por geracao; no free tier ha limite diario de requests.
+- `npm run dev`
+- `npm run build`
+- `npm run lint`
+- `npm run preview`
 
 ## Deploy
 
-- Link: (pendente)
+- Link: (preencher)
 
 ## Video
 
-- Link: (pendente)
+- Link: (preencher)
