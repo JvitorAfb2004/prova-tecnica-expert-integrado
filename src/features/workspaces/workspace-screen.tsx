@@ -111,10 +111,7 @@ export function WorkspaceScreen({ session }: { session: Session }) {
 
     const { data, error } = await supabase
       .from("workspaces")
-      .insert({
-        name,
-        created_by: session.user.id,
-      })
+      .insert({ name })
       .select("id, name, created_at")
       .single()
 
