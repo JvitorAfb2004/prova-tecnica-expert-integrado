@@ -20,6 +20,8 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - Seed de etapas do funil via trigger ao criar workspace.
 - Navegacao por rotas em `/app/*` para separar seções do painel.
 - Sessao do Supabase reafirmada no login para garantir RLS em operacoes de escrita.
+- Client Supabase com persistencia de sessao explicita e refresh automatico.
+- Criacao de workspace via RPC `create_workspace` (security definer) para evitar falha de RLS no insert.
 
 ## Modelo de dados (Supabase)
 

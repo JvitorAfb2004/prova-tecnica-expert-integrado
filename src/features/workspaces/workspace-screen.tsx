@@ -103,6 +103,18 @@ export function WorkspaceScreen({ session }: { session: Session }) {
     setNotice(null)
     setErrorMessage(null)
 
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    })
+    if (sessionError) {
+      setErrorMessage(
+        "Sessao expirada. Faça login novamente para criar o workspace."
+      )
+      setIsSubmitting(false)
+      return
+    }
+
     const name = newWorkspaceName.trim()
     if (!name) {
       setErrorMessage("Informe um nome para o workspace.")
@@ -110,11 +122,9 @@ export function WorkspaceScreen({ session }: { session: Session }) {
       return
     }
 
-    const { data, error } = await supabase
-      .from("workspaces")
-      .insert({ name })
-      .select("id, name, created_at")
-      .single()
+    const { data, error } = await supabase.rpc("create_workspace", {
+      p_name: name,
+    })
 
     if (error) {
       setErrorMessage(error.message)
@@ -123,7 +133,14 @@ export function WorkspaceScreen({ session }: { session: Session }) {
     }
 
     setNewWorkspaceName("")
-    setActiveWorkspaceId(data.id)
+    const createdWorkspace = data as { id?: string } | null
+    if (!createdWorkspace?.id) {
+      setErrorMessage("Nao foi possivel criar o workspace.")
+      setIsSubmitting(false)
+      return
+    }
+
+    setActiveWorkspaceId(createdWorkspace.id)
     setNotice("Workspace criado.")
     setIsSubmitting(false)
     await loadWorkspaces()
