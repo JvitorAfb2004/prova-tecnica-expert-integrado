@@ -5,7 +5,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 ## Links
 
 - Repositorio: https://github.com/JvitorAfb2004/prova-tecnica-expert-integrado
-- Aplicacao publicada: (preencher)
+- Aplicacao publicada: https://prova-tecnica-expert-integrado.vercel.app
 - Video: https://drive.google.com/file/d/1gJlieLEVFfL_hnDLVJXXL_ophlQRwVgs/view?usp=sharing
 
 ## Stack
@@ -127,8 +127,9 @@ npm run dev
 
 ## Deploy
 
-- Link: (preencher)
+- Link: https://prova-tecnica-expert-integrado.vercel.app
 
 ## Video
 
 - Link: https://drive.google.com/file/d/1gJlieLEVFfL_hnDLVJXXL_ophlQRwVgs/view?usp=sharing
+- Observacao: houve um corte no trecho de teste da IA porque o Gemini estourou o limite de quota; precisei gerar outra chave e finalizei assim por estar no fim do prazo da prova.
