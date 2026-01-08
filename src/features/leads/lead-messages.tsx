@@ -246,6 +246,28 @@ export function LeadMessages({
 
   return (
     <div className="space-y-2">
+      <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <p className="font-medium text-foreground">Resumo do lead</p>
+        <div className="mt-2 grid gap-1">
+          <p>Nome: {lead.name}</p>
+          {lead.company ? <p>Empresa: {lead.company}</p> : null}
+          {lead.job_title ? <p>Cargo: {lead.job_title}</p> : null}
+          {lead.email ? <p>Email: {lead.email}</p> : null}
+          {lead.phone ? <p>Telefone: {lead.phone}</p> : null}
+          {lead.lead_source ? <p>Origem: {lead.lead_source}</p> : null}
+          {lead.notes ? <p>Observacoes: {lead.notes}</p> : null}
+          {lead.custom_fields &&
+          Object.keys(lead.custom_fields).length > 0 ? (
+            <p>
+              Campos personalizados:{" "}
+              {Object.entries(lead.custom_fields)
+                .filter(([, value]) => value !== null && value !== "")
+                .map(([key, value]) => `${key}: ${String(value)}`)
+                .join(", ")}
+            </p>
+          ) : null}
+        </div>
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <Select
           value={selectedCampaignId ?? ""}

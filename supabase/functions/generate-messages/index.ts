@@ -148,7 +148,7 @@ function buildPrompt(
     `Instrucoes adicionais: ${promptText}.`,
     `Dados do lead:\n${leadLines.join("\n")}`,
     `Gere ${variations} variacoes curtas e objetivas.`,
-    `Responda apenas com um JSON array de strings.`,
+    `Responda apenas com um JSON array de strings, sem markdown e sem blocos \`\`\`.`,
   ].join("\n")
 }
 
@@ -170,8 +170,10 @@ function formatCustomFields(fields?: Record<string, string | number | boolean | 
 function parseMessages(rawText: string, variations: number) {
   if (!rawText) return []
 
+  const cleaned = stripCodeFences(rawText).trim()
+
   try {
-    const parsed = JSON.parse(rawText)
+    const parsed = JSON.parse(cleaned)
     if (Array.isArray(parsed)) {
       return parsed.filter((item) => typeof item === "string").slice(0, variations)
     }
@@ -184,10 +186,35 @@ function parseMessages(rawText: string, variations: number) {
     // ignored
   }
 
-  const fallback = rawText
+  const extracted = extractJsonArray(cleaned)
+  if (extracted) {
+    try {
+      const parsed = JSON.parse(extracted)
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((item) => typeof item === "string")
+          .slice(0, variations)
+      }
+    } catch (_error) {
+      // ignored
+    }
+  }
+
+  const fallback = cleaned
     .split("\n")
     .map((line) => line.replace(/^[-*\d.\s]+/, "").trim())
     .filter(Boolean)
 
   return fallback.slice(0, variations)
+}
+
+function stripCodeFences(text: string) {
+  return text
+    .replace(/```json/gi, "")
+    .replace(/```/g, "")
+}
+
+function extractJsonArray(text: string) {
+  const match = text.match(/\[[\s\S]*\]/)
+  return match ? match[0] : null
 }
