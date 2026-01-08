@@ -81,7 +81,7 @@ function AuthForm() {
         ? supabase.auth.signInWithPassword({ email, password })
         : supabase.auth.signUp({ email, password })
 
-    const { data, error } = await action
+    const { error } = await action
 
     if (error) {
       setErrorMessage(error.message)
@@ -90,11 +90,7 @@ function AuthForm() {
     }
 
     if (mode === "sign-up") {
-      if (data.session) {
-        setNotice("Conta criada. Voce ja esta logado.")
-      } else {
-        setNotice("Conta criada. Verifique seu email para confirmar.")
-      }
+      setNotice("Conta criada. Voce ja esta logado.")
     }
 
     setPassword("")

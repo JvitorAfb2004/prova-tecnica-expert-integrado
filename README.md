@@ -57,8 +57,8 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 
 - [ ] Geracao automatica por etapa gatilho
 - [ ] Edicao de funil (criar/editar etapas)
-- [ ] Multi-workspace por usuario
-- [ ] Convite de usuarios com papeis
+- [x] Multi-workspace por usuario
+- [x] Convite de usuarios com papeis
 - [ ] Historico de atividades
 - [ ] Historico de mensagens enviadas
 - [ ] Filtros e busca de leads

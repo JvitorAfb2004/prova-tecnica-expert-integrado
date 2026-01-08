@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { WorkspaceInvites } from "@/features/workspaces/workspace-invites"
 import { supabase } from "@/lib/supabase"
 
 type WorkspaceRole = "admin" | "member"
@@ -225,6 +226,15 @@ export function WorkspaceScreen({ session }: { session: Session }) {
             </Button>
           </CardFooter>
         </Card>
+
+        {activeWorkspace ? (
+          <WorkspaceInvites
+            session={session}
+            workspaceId={activeWorkspace.id}
+            isAdmin={activeWorkspace.role === "admin"}
+            onRefresh={loadWorkspaces}
+          />
+        ) : null}
 
         <Card>
           <CardHeader>
