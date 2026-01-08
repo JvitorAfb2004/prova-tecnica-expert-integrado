@@ -3,13 +3,6 @@ import * as React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -115,12 +108,12 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       return
     }
 
-    const mapped = (members ?? [])
-      .map((member) => ({
+    const mapped = ((members ?? []) as { user_id: string; email: string | null }[])
+      .map((member): OwnerOption => ({
         id: member.user_id,
         email: member.email ?? "usuario",
       }))
-      .sort((a, b) => a.email.localeCompare(b.email))
+      .sort((a: OwnerOption, b: OwnerOption) => a.email.localeCompare(b.email))
 
     setOwners(mapped)
     setOwnersLoading(false)

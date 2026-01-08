@@ -6,7 +6,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 
 - Repositorio: https://github.com/JvitorAfb2004/prova-tecnica-expert-integrado
 - Aplicacao publicada: (preencher)
-- Video: (preencher)
+- Video: https://drive.google.com/file/d/1gJlieLEVFfL_hnDLVJXXL_ophlQRwVgs/view?usp=sharing
 
 ## Stack
 
@@ -35,15 +35,6 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - [x] Regras de transicao por etapa (campos obrigatorios)
 - [x] Dashboard com metricas basicas por etapa
 - [x] RLS para isolamento por workspace
-
-### Diferenciais (nao implementados)
-
-- [ ] Geracao automatica por etapa gatilho
-- [ ] Edicao completa do funil (criar/editar etapas)
-- [ ] Historico de atividades do lead
-- [ ] Historico de mensagens enviadas
-- [ ] Filtros e busca de leads
-- [ ] Metricas avancadas (conversao, por periodo, por campanha)
 
 ## Decisoes tecnicas
 
@@ -103,18 +94,21 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 
 ## Como rodar localmente
 
-1) Instalar dependencias
+1. Instalar dependencias
+
 ```bash
 npm install
 ```
 
-2) Variaveis de ambiente (frontend)
+2. Variaveis de ambiente (frontend)
+
 ```bash
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
-3) Rodar
+3. Rodar
+
 ```bash
 npm run dev
 ```
@@ -137,4 +131,4 @@ npm run dev
 
 ## Video
 
-- Link: (preencher)
+- Link: https://drive.google.com/file/d/1gJlieLEVFfL_hnDLVJXXL_ophlQRwVgs/view?usp=sharing
