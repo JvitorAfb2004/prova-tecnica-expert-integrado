@@ -67,6 +67,7 @@ export function WorkspaceScreen({ session }: { session: Session }) {
     const { data, error } = await supabase
       .from("workspace_members")
       .select("workspace_id, role, workspaces (id, name, created_at)")
+      .eq("user_id", session.user.id)
       .order("created_at", { ascending: false })
 
     if (error) {
