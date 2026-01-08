@@ -1,5 +1,4 @@
 import * as React from "react"
-import type { Session } from "@supabase/supabase-js"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { WorkspaceScreen } from "@/features/workspaces/workspace-screen"
 import { supabase } from "@/lib/supabase"
 
 type AuthMode = "sign-in" | "sign-up"
@@ -40,11 +40,7 @@ export function AuthScreen() {
     )
   }
 
-  return (
-    <AuthShell>
-      <SignedInCard session={session} />
-    </AuthShell>
-  )
+  return <WorkspaceScreen session={session} />
 }
 
 function AuthShell({ children }: { children: React.ReactNode }) {
@@ -173,27 +169,6 @@ function AuthForm() {
           }
         >
           {mode === "sign-in" ? "Criar conta" : "Entrar"}
-        </Button>
-      </CardFooter>
-    </Card>
-  )
-}
-
-function SignedInCard({ session }: { session: Session }) {
-  const userEmail = session.user.email ?? "usuario"
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Conectado</CardTitle>
-        <CardDescription>Voce ja possui sessao ativa.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">Email: {userEmail}</p>
-      </CardContent>
-      <CardFooter className="justify-end">
-        <Button type="button" variant="outline" onClick={() => supabase.auth.signOut()}>
-          Sair
         </Button>
       </CardFooter>
     </Card>
