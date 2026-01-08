@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { Campaign } from "@/features/campaigns/use-campaigns"
-import { LeadForm, type LeadFormValues } from "@/features/leads/lead-form"
+import { LeadForm, type LeadFormValues, type OwnerOption } from "@/features/leads/lead-form"
 import { LeadMessages } from "@/features/leads/lead-messages"
 import type { LeadItem } from "@/features/leads/lead-types"
 import { buildCustomFieldsPayload, normalizeCustomFields } from "@/features/leads/lead-custom-fields"
@@ -24,6 +24,7 @@ type LeadCardProps = {
   stages: FunnelStage[]
   campaigns: Campaign[]
   customFieldDefinitions: LeadFieldDefinition[]
+  owners: OwnerOption[]
   onChanged: () => Promise<void>
 }
 
@@ -33,6 +34,7 @@ export function LeadCard({
   stages,
   campaigns,
   customFieldDefinitions,
+  owners,
   onChanged,
 }: LeadCardProps) {
   const [isEditing, setIsEditing] = React.useState(false)
@@ -84,6 +86,49 @@ export function LeadCard({
     await onChanged()
   }
 
+  const moveToContact = async () => {
+    const contactStage = stages.find(
+      (item) => item.name.toLowerCase() === "tentando contato"
+    )
+
+    if (!contactStage) {
+      setErrorMessage("Etapa 'Tentando Contato' nao encontrada.")
+      return
+    }
+
+    const missing = getMissingFields(
+      contactStage.required_fields,
+      {
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+        company: lead.company,
+        job_title: lead.job_title,
+        lead_source: lead.lead_source,
+        notes: lead.notes,
+        custom_fields: lead.custom_fields,
+      },
+      customFieldDefinitions
+    )
+
+    if (missing.length > 0) {
+      setErrorMessage(`Campos obrigatorios: ${missing.join(", ")}`)
+      return
+    }
+
+    const { error } = await supabase
+      .from("leads")
+      .update({ stage_id: contactStage.id })
+      .eq("id", lead.id)
+
+    if (error) {
+      setErrorMessage(error.message)
+      return
+    }
+
+    await onChanged()
+  }
+
   const handleDelete = async () => {
     if (!window.confirm("Excluir este lead?")) return
     setErrorMessage(null)
@@ -115,6 +160,7 @@ export function LeadCard({
       job_title: values.jobTitle.trim() || null,
       lead_source: values.leadSource.trim() || null,
       notes: values.notes.trim() || null,
+      owner_id: values.ownerId,
       custom_fields: buildCustomFieldsPayload(
         values.customFields,
         customFieldDefinitions
@@ -152,7 +198,10 @@ export function LeadCard({
       customFieldDefinitions,
       lead.custom_fields
     ),
+    ownerId: lead.owner_id ?? null,
   }
+
+  const ownerLabel = owners.find((owner) => owner.id === lead.owner_id)?.email
 
   return (
     <div className="rounded-lg border border-border/60 bg-card px-3 py-2">
@@ -196,6 +245,11 @@ export function LeadCard({
             Origem: {lead.lead_source}
           </p>
         ) : null}
+        {ownerLabel ? (
+          <p className="text-xs text-muted-foreground">
+            Responsavel: {ownerLabel}
+          </p>
+        ) : null}
         {lead.notes ? (
           <p className="text-xs text-muted-foreground">{lead.notes}</p>
         ) : null}
@@ -219,6 +273,7 @@ export function LeadCard({
             submitLabel="Salvar"
             busyLabel="Salvando..."
             showStage={false}
+            owners={owners}
             onSubmit={handleUpdate}
             onCancel={() => setIsEditing(false)}
           />
@@ -250,6 +305,7 @@ export function LeadCard({
               workspaceId={workspaceId}
               lead={lead}
               campaigns={campaigns}
+              onSend={moveToContact}
               onGenerated={onChanged}
             />
           </div>

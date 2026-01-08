@@ -11,4 +11,5 @@ export type LeadItem = {
   notes: string | null
   stage_id: string | null
   custom_fields: LeadCustomFields
+  owner_id: string | null
 }

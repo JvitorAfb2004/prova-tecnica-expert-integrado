@@ -28,11 +28,13 @@ export type LeadFormValues = {
   notes: string
   stageId: string | null
   customFields: Record<string, string | boolean | null>
+  ownerId: string | null
 }
 
 type LeadFormProps = {
   stages: FunnelStage[]
   customFieldDefinitions?: LeadFieldDefinition[]
+  owners?: OwnerOption[]
   initialValues: LeadFormValues
   submitLabel: string
   busyLabel?: string
@@ -42,9 +44,15 @@ type LeadFormProps = {
   onCancel?: () => void
 }
 
+export type OwnerOption = {
+  id: string
+  email: string
+}
+
 export function LeadForm({
   stages,
   customFieldDefinitions = [],
+  owners = [],
   initialValues,
   submitLabel,
   busyLabel,
@@ -172,6 +180,32 @@ export function LeadForm({
             onChange={(event) => handleChange("jobTitle", event.target.value)}
           />
         </div>
+        {owners.length > 0 ? (
+          <div className="space-y-2">
+            <Label htmlFor="lead-owner">Responsavel</Label>
+            <Select
+              value={values.ownerId ?? "unassigned"}
+              onValueChange={(value) =>
+                setValues((current) => ({
+                  ...current,
+                  ownerId: value === "unassigned" ? null : value,
+                }))
+              }
+            >
+              <SelectTrigger id="lead-owner" className="w-full">
+                <SelectValue placeholder="Sem responsavel" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Sem responsavel</SelectItem>
+                {owners.map((owner) => (
+                  <SelectItem key={owner.id} value={owner.id}>
+                    {owner.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="lead-source">Origem do lead</Label>
           <Input

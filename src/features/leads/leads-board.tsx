@@ -13,7 +13,7 @@ import { useCampaigns } from "@/features/campaigns/use-campaigns"
 import { useFunnelStages } from "@/features/funnel/use-funnel-stages"
 import { LeadCard } from "@/features/leads/lead-card"
 import { buildCustomFieldsPayload, normalizeCustomFields } from "@/features/leads/lead-custom-fields"
-import { LeadForm, type LeadFormValues } from "@/features/leads/lead-form"
+import { LeadForm, type LeadFormValues, type OwnerOption } from "@/features/leads/lead-form"
 import type { LeadItem } from "@/features/leads/lead-types"
 import { getMissingFields } from "@/features/leads/lead-validation"
 import { useLeadFieldDefinitions } from "@/features/leads/use-lead-field-definitions"
@@ -54,6 +54,9 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
     errorMessage: campaignsError,
     refresh: refreshCampaigns,
   } = useCampaigns(workspaceId)
+  const [owners, setOwners] = React.useState<OwnerOption[]>([])
+  const [ownersLoading, setOwnersLoading] = React.useState(true)
+  const [ownersError, setOwnersError] = React.useState<string | null>(null)
 
   const loadLeads = React.useCallback(async () => {
     setLeadsLoading(true)
@@ -62,7 +65,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
     const { data, error } = await supabase
       .from("leads")
       .select(
-        "id, name, company, job_title, stage_id, email, phone, lead_source, notes, custom_fields"
+        "id, name, company, job_title, stage_id, email, phone, lead_source, notes, custom_fields, owner_id"
       )
       .eq("workspace_id", workspaceId)
       .order("created_at", { ascending: false })
@@ -73,13 +76,41 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       return
     }
 
-    setLeads(data ?? [])
+    setLeads((data ?? []) as LeadItem[])
     setLeadsLoading(false)
   }, [workspaceId])
 
   React.useEffect(() => {
     loadLeads()
   }, [loadLeads])
+
+  const loadOwners = React.useCallback(async () => {
+    setOwnersLoading(true)
+    setOwnersError(null)
+
+    const { data: members, error: membersError } = await supabase
+      .rpc("list_workspace_members", { p_workspace_id: workspaceId })
+
+    if (membersError) {
+      setOwnersError(membersError.message)
+      setOwnersLoading(false)
+      return
+    }
+
+    const mapped = (members ?? [])
+      .map((member) => ({
+        id: member.user_id,
+        email: member.email ?? "usuario",
+      }))
+      .sort((a, b) => a.email.localeCompare(b.email))
+
+    setOwners(mapped)
+    setOwnersLoading(false)
+  }, [workspaceId])
+
+  React.useEffect(() => {
+    loadOwners()
+  }, [loadOwners])
 
   const defaultStageId = stages[0]?.id ?? null
   const customFieldsInitial = React.useMemo(
@@ -98,6 +129,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       notes: "",
       stageId: defaultStageId,
       customFields: customFieldsInitial,
+      ownerId: null,
     }),
     [customFieldsInitial, defaultStageId]
   )
@@ -143,6 +175,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       lead_source: values.leadSource.trim() || null,
       notes: values.notes.trim() || null,
       custom_fields: customPayload,
+      owner_id: values.ownerId,
     }
 
     const { error } = await supabase.from("leads").insert(payload)
@@ -162,13 +195,23 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
       refreshFields(),
       refreshCampaigns(),
       loadLeads(),
+      loadOwners(),
     ])
   }
 
   const loading =
-    leadsLoading || stagesLoading || fieldsLoading || campaignsLoading
+    leadsLoading ||
+    stagesLoading ||
+    fieldsLoading ||
+    campaignsLoading ||
+    ownersLoading
   const errorMessage =
-    leadsError ?? stagesError ?? fieldsError ?? campaignsError ?? null
+    leadsError ??
+    stagesError ??
+    fieldsError ??
+    campaignsError ??
+    ownersError ??
+    null
 
   const columns = React.useMemo<StageColumn[]>(() => {
     const baseColumns = stages.map((stage) => ({
@@ -233,6 +276,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
               <LeadForm
                 stages={stages}
                 customFieldDefinitions={definitions}
+                owners={owners}
                 initialValues={createInitialValues}
                 submitLabel="Adicionar lead"
                 busyLabel="Adicionando..."
@@ -264,6 +308,7 @@ export function LeadsBoard({ workspaceId, workspaceName }: LeadsBoardProps) {
                         stages={stages}
                         campaigns={campaigns}
                         customFieldDefinitions={definitions}
+                        owners={owners}
                         onChanged={loadLeads}
                       />
                     ))}

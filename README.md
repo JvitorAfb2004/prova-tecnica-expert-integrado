@@ -60,6 +60,8 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - [x] Visualizacao de leads por etapas (sem drag and drop)
 - [x] Campanhas de abordagem
 - [x] Geracao de mensagens (2 a 3 variacoes)
+- [x] Envio simulado com movimentacao para "Tentando Contato"
+- [x] Responsavel pelo lead (atribuir usuario)
 - [ ] RLS no banco
 - [ ] Dashboard com metricas basicas
 

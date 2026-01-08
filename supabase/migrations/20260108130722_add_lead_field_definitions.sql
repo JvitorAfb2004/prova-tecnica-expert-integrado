@@ -32,3 +32,14 @@ create policy lead_field_definitions_update_admin on public.lead_field_definitio
 
 create policy lead_field_definitions_delete_admin on public.lead_field_definitions
   for delete using (public.is_workspace_admin(workspace_id));
+
+create or replace function public.get_workspaces_for_user()
+returns table (workspace_id uuid)
+language sql
+security definer
+set search_path = public
+as $$
+  select wm.workspace_id
+  from public.workspace_members wm
+  where wm.user_id = auth.uid();
+$$;
