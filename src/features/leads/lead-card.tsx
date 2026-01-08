@@ -260,29 +260,9 @@ export function LeadCard({
         {lead.job_title ? (
           <p className="text-xs text-muted-foreground">{lead.job_title}</p>
         ) : null}
-        {lead.email ? (
-          <p className="text-xs text-muted-foreground">Email: {lead.email}</p>
-        ) : null}
-        {lead.phone ? (
-          <p className="text-xs text-muted-foreground">Tel: {lead.phone}</p>
-        ) : null}
-        {lead.lead_source ? (
-          <p className="text-xs text-muted-foreground">
-            Origem: {lead.lead_source}
-          </p>
-        ) : null}
         {ownerLabel ? (
           <p className="text-xs text-muted-foreground">
             Responsavel: {ownerLabel}
-          </p>
-        ) : null}
-        {lead.notes ? (
-          <p className="text-xs text-muted-foreground">{lead.notes}</p>
-        ) : null}
-        {lead.custom_fields &&
-        Object.keys(lead.custom_fields).length > 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Campos personalizados preenchidos.
           </p>
         ) : null}
         {errorMessage ? (
@@ -341,16 +321,28 @@ export function LeadCard({
             </AlertDialogContent>
           </AlertDialog>
         </div>
-        <div>
-          <p className="text-xs font-medium">Mensagens IA</p>
-          <LeadMessages
-            workspaceId={workspaceId}
-            lead={lead}
-            campaigns={campaigns}
-            onSend={moveToContact}
-            onGenerated={onChanged}
-          />
-        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button type="button" size="sm" variant="ghost">
+              Mensagens IA
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Mensagens IA</DialogTitle>
+              <DialogDescription>
+                Gere mensagens personalizadas para este lead.
+              </DialogDescription>
+            </DialogHeader>
+            <LeadMessages
+              workspaceId={workspaceId}
+              lead={lead}
+              campaigns={campaigns}
+              onSend={moveToContact}
+              onGenerated={onChanged}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

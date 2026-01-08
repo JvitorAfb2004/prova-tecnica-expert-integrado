@@ -22,6 +22,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - Sessao do Supabase reafirmada no login para garantir RLS em operacoes de escrita.
 - Client Supabase com persistencia de sessao explicita e refresh automatico.
 - Criacao de workspace via RPC `create_workspace` (security definer) para evitar falha de RLS no insert.
+- Mensagens IA em modal de lead e chamada com JWT explicito na Edge Function.
 
 ## Modelo de dados (Supabase)
 

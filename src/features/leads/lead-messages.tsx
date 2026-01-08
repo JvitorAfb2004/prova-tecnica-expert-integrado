@@ -112,6 +112,14 @@ export function LeadMessages({
 
     setLoading(true)
 
+    const { data: sessionData, error: sessionError } =
+      await supabase.auth.getSession()
+    if (sessionError || !sessionData.session?.access_token) {
+      setErrorMessage("Sessao expirada. Faça login novamente.")
+      setLoading(false)
+      return
+    }
+
     const { data, error } = await supabase.functions.invoke("generate-messages", {
       body: {
         lead: {
@@ -131,6 +139,9 @@ export function LeadMessages({
         },
         variations,
         locale: "pt-BR",
+      },
+      headers: {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
       },
     })
 
