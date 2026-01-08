@@ -179,25 +179,25 @@ function formatCustomFields(fields?: Record<string, string | number | boolean | 
 }
 
 function parseMessages(rawText: string, variations: number) {
+  return parseMessagesInternal(rawText, variations, 0)
+}
+
+function parseMessagesInternal(rawText: string, variations: number, depth: number) {
   if (!rawText) return []
 
   const cleaned = stripCodeFences(rawText).trim()
 
   try {
     const parsed = JSON.parse(cleaned)
+    if (typeof parsed === "string") {
+      if (depth >= 2) return []
+      return parseMessagesInternal(parsed, variations, depth + 1)
+    }
     if (Array.isArray(parsed)) {
-      return parsed
-        .filter((item) => typeof item === "string")
-        .map((item) => item.trim())
-        .filter((item) => item && item !== "[" && item !== "]")
-        .slice(0, variations)
+      return sanitizeMessages(parsed, variations)
     }
     if (parsed && Array.isArray(parsed.messages)) {
-      return parsed.messages
-        .filter((item: unknown) => typeof item === "string")
-        .map((item: string) => item.trim())
-        .filter((item: string) => item && item !== "[" && item !== "]")
-        .slice(0, variations)
+      return sanitizeMessages(parsed.messages, variations)
     }
   } catch (_error) {
     // ignored
@@ -207,10 +207,12 @@ function parseMessages(rawText: string, variations: number) {
   if (extracted) {
     try {
       const parsed = JSON.parse(extracted)
+      if (typeof parsed === "string") {
+        if (depth >= 2) return []
+        return parseMessagesInternal(parsed, variations, depth + 1)
+      }
       if (Array.isArray(parsed)) {
-        return parsed
-          .filter((item) => typeof item === "string")
-          .slice(0, variations)
+        return sanitizeMessages(parsed, variations)
       }
     } catch (_error) {
       // ignored
@@ -219,7 +221,7 @@ function parseMessages(rawText: string, variations: number) {
 
   const quoted = extractQuotedStrings(cleaned)
   if (quoted.length > 0) {
-    return quoted.slice(0, variations)
+    return sanitizeMessages(quoted, variations)
   }
 
   const fallback = cleaned
@@ -244,6 +246,22 @@ function extractJsonArray(text: string) {
 function extractQuotedStrings(text: string) {
   const matches = text.match(/"([^"]+)"/g) ?? []
   return matches.map((match) => match.replace(/"/g, "")).filter(Boolean)
+}
+
+function sanitizeMessages(messages: unknown[], variations: number) {
+  return messages
+    .filter((item) => typeof item === "string")
+    .map((item) =>
+      item
+        .trim()
+        .replace(/^\[/, "")
+        .replace(/\]$/, "")
+        .replace(/^"+/, "")
+        .replace(/"+$/, "")
+        .trim()
+    )
+    .filter((item) => item && item !== "[" && item !== "]")
+    .slice(0, variations)
 }
 
 function collectMessages(texts: string[], variations: number) {
