@@ -1,13 +1,14 @@
 import * as React from "react"
 import type { Session } from "@supabase/supabase-js"
+import { Navigate, Route, Routes } from "react-router-dom"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { AppShell } from "@/components/layout/app-shell"
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -131,157 +132,227 @@ export function WorkspaceScreen({ session }: { session: Session }) {
   const activeWorkspace = workspaces.find(
     (workspace) => workspace.id === activeWorkspaceId
   )
+  const navItems = [
+    { label: "Workspaces", to: "/app/workspaces" },
+    { label: "Convites", to: "/app/convites" },
+    { label: "Campos", to: "/app/campos" },
+    { label: "Requisitos", to: "/app/requisitos" },
+    { label: "Campanhas", to: "/app/campanhas" },
+    { label: "Leads", to: "/app/leads" },
+    { label: "Criar workspace", to: "/app/criar-workspace" },
+  ]
+
+  const emptyWorkspaceCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Selecione um workspace</CardTitle>
+        <CardDescription>
+          Escolha um workspace ativo para acessar este conteudo.
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  )
+
+  const workspacesSection = (
+    <>
+      <div className="flex flex-col gap-2">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+          SDR CRM
+        </p>
+        <h1 className="text-2xl font-semibold">Workspaces</h1>
+        <p className="text-sm text-muted-foreground">
+          Selecione um workspace para continuar ou crie um novo.
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Workspace ativo</CardTitle>
+          <CardDescription>
+            {activeWorkspace
+              ? "Voce ja pode seguir para o CRM."
+              : "Nenhum workspace selecionado ainda."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {activeWorkspace ? (
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">{activeWorkspace.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Papel: {activeWorkspace.role}
+                </p>
+              </div>
+              <Badge variant="secondary">Ativo</Badge>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Escolha um workspace abaixo para ativar.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Seus workspaces</CardTitle>
+          <CardDescription>
+            {loading
+              ? "Carregando workspaces..."
+              : "Gerencie os workspaces que voce participa."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {errorMessage ? (
+            <p className="text-sm text-destructive">{errorMessage}</p>
+          ) : null}
+          {notice ? (
+            <p className="text-sm text-muted-foreground">{notice}</p>
+          ) : null}
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Aguarde...</p>
+          ) : workspaces.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum workspace encontrado. Crie o primeiro abaixo.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {workspaces.map((workspace) => (
+                <div
+                  key={workspace.id}
+                  className="flex items-center justify-between rounded-lg border border-border/60 px-4 py-3"
+                >
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">{workspace.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Papel: {workspace.role}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant={
+                      workspace.id === activeWorkspaceId ? "secondary" : "outline"
+                    }
+                    onClick={() => setActiveWorkspaceId(workspace.id)}
+                  >
+                    {workspace.id === activeWorkspaceId
+                      ? "Selecionado"
+                      : "Selecionar"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  )
+
+  const createWorkspaceSection = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Criar workspace</CardTitle>
+        <CardDescription>Defina o nome da empresa ou equipe.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="space-y-4" onSubmit={handleCreateWorkspace}>
+          <div className="space-y-2">
+            <Label htmlFor="workspace-name">Nome do workspace</Label>
+            <Input
+              id="workspace-name"
+              placeholder="Ex: Vibe Sales"
+              value={newWorkspaceName}
+              onChange={(event) => setNewWorkspaceName(event.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Criando..." : "Criar workspace"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
 
   return (
-    <div className="min-h-screen bg-muted/40 px-4 py-10">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            SDR CRM
-          </p>
-          <h1 className="text-2xl font-semibold">Workspaces</h1>
-          <p className="text-sm text-muted-foreground">
-            Selecione um workspace para continuar ou crie um novo.
-          </p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Workspace ativo</CardTitle>
-            <CardDescription>
-              {activeWorkspace
-                ? "Voce ja pode seguir para o CRM."
-                : "Nenhum workspace selecionado ainda."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {activeWorkspace ? (
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-medium">{activeWorkspace.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Papel: {activeWorkspace.role}
-                  </p>
-                </div>
-                <Badge variant="secondary">Ativo</Badge>
-              </div>
+    <AppShell
+      userEmail={session.user.email ?? "usuario"}
+      workspaceName={activeWorkspace?.name ?? null}
+      workspaceRole={activeWorkspace?.role ?? null}
+      navItems={navItems}
+      onSignOut={() => supabase.auth.signOut()}
+    >
+      <Routes>
+        <Route path="/" element={<Navigate to="workspaces" replace />} />
+        <Route path="workspaces" element={workspacesSection} />
+        <Route
+          path="convites"
+          element={
+            activeWorkspace ? (
+              <WorkspaceInvites
+                session={session}
+                workspaceId={activeWorkspace.id}
+                isAdmin={activeWorkspace.role === "admin"}
+                onRefresh={loadWorkspaces}
+              />
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Escolha um workspace abaixo para ativar.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Seus workspaces</CardTitle>
-            <CardDescription>
-              {loading
-                ? "Carregando workspaces..."
-                : "Gerencie os workspaces que voce participa."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {errorMessage ? (
-              <p className="text-sm text-destructive">{errorMessage}</p>
-            ) : null}
-            {notice ? (
-              <p className="text-sm text-muted-foreground">{notice}</p>
-            ) : null}
-            {loading ? (
-              <p className="text-sm text-muted-foreground">Aguarde...</p>
-            ) : workspaces.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nenhum workspace encontrado. Crie o primeiro abaixo.
-              </p>
+              emptyWorkspaceCard
+            )
+          }
+        />
+        <Route
+          path="campos"
+          element={
+            activeWorkspace ? (
+              <CustomFieldsPanel
+                workspaceId={activeWorkspace.id}
+                isAdmin={activeWorkspace.role === "admin"}
+              />
             ) : (
-              <div className="space-y-3">
-                {workspaces.map((workspace) => (
-                  <div
-                    key={workspace.id}
-                    className="flex items-center justify-between rounded-lg border border-border/60 px-4 py-3"
-                  >
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">{workspace.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Papel: {workspace.role}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant={
-                        workspace.id === activeWorkspaceId ? "secondary" : "outline"
-                      }
-                      onClick={() => setActiveWorkspaceId(workspace.id)}
-                    >
-                      {workspace.id === activeWorkspaceId
-                        ? "Selecionado"
-                        : "Selecionar"}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="justify-end">
-            <Button type="button" variant="outline" onClick={() => supabase.auth.signOut()}>
-              Sair
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {activeWorkspace ? (
-          <>
-            <WorkspaceInvites
-              session={session}
-              workspaceId={activeWorkspace.id}
-              isAdmin={activeWorkspace.role === "admin"}
-              onRefresh={loadWorkspaces}
-            />
-            <CustomFieldsPanel
-              workspaceId={activeWorkspace.id}
-              isAdmin={activeWorkspace.role === "admin"}
-            />
-            <StageRequirementsPanel
-              workspaceId={activeWorkspace.id}
-              isAdmin={activeWorkspace.role === "admin"}
-            />
-            <CampaignsPanel workspaceId={activeWorkspace.id} stages={stages} />
-            <LeadsBoard
-              workspaceId={activeWorkspace.id}
-              workspaceName={activeWorkspace.name}
-            />
-          </>
-        ) : null}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Criar workspace</CardTitle>
-            <CardDescription>
-              Defina o nome da empresa ou equipe.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={handleCreateWorkspace}>
-              <div className="space-y-2">
-                <Label htmlFor="workspace-name">Nome do workspace</Label>
-                <Input
-                  id="workspace-name"
-                  placeholder="Ex: Vibe Sales"
-                  value={newWorkspaceName}
-                  onChange={(event) => setNewWorkspaceName(event.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Criando..." : "Criar workspace"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+              emptyWorkspaceCard
+            )
+          }
+        />
+        <Route
+          path="requisitos"
+          element={
+            activeWorkspace ? (
+              <StageRequirementsPanel
+                workspaceId={activeWorkspace.id}
+                isAdmin={activeWorkspace.role === "admin"}
+              />
+            ) : (
+              emptyWorkspaceCard
+            )
+          }
+        />
+        <Route
+          path="campanhas"
+          element={
+            activeWorkspace ? (
+              <CampaignsPanel workspaceId={activeWorkspace.id} stages={stages} />
+            ) : (
+              emptyWorkspaceCard
+            )
+          }
+        />
+        <Route
+          path="leads"
+          element={
+            activeWorkspace ? (
+              <LeadsBoard
+                workspaceId={activeWorkspace.id}
+                workspaceName={activeWorkspace.name}
+              />
+            ) : (
+              emptyWorkspaceCard
+            )
+          }
+        />
+        <Route path="criar-workspace" element={createWorkspaceSection} />
+        <Route path="*" element={<Navigate to="workspaces" replace />} />
+      </Routes>
+    </AppShell>
   )
 }
 

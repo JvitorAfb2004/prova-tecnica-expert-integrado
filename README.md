@@ -6,6 +6,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 
 - Frontend: React + Vite + TypeScript
 - UI: Tailwind v4 + shadcn/ui
+- Roteamento: React Router
 - Backend: Supabase (Postgres, Auth, Edge Functions)
 - IA: Google Gemini 2.5 Flash
 
@@ -17,6 +18,8 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - Definicoes de campos personalizados em `lead_field_definitions`.
 - Geracao de mensagens via Edge Function; chave da Gemini armazenada em secret do Supabase.
 - Seed de etapas do funil via trigger ao criar workspace.
+- Navegacao por rotas em `/app/*` para separar seções do painel.
+- Sessao do Supabase reafirmada no login para garantir RLS em operacoes de escrita.
 
 ## Modelo de dados (Supabase)
 
@@ -32,6 +35,7 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 ## Seguranca (RLS)
 
 - workspaces: membro pode ler; admin atualiza/remove.
+- workspaces (insert): permite `created_by` nulo para usar default `auth.uid()`.
 - workspace_members: admin gerencia; membros podem ler.
 - workspace_invites: admin cria/gerencia; convidado le se email do JWT bater.
 - funnel_stages, leads, campaigns, lead_messages: acesso por membro do workspace.

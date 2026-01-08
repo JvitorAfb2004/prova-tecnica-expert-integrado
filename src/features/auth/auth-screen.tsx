@@ -11,36 +11,29 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { WorkspaceScreen } from "@/features/workspaces/workspace-screen"
 import { supabase } from "@/lib/supabase"
 
 type AuthMode = "sign-in" | "sign-up"
 
 export function AuthScreen() {
-  const { session, loading } = useSession()
+  return (
+    <AuthShell>
+      <AuthForm />
+    </AuthShell>
+  )
+}
 
-  if (loading) {
-    return (
-      <AuthShell>
-        <Card>
-          <CardHeader>
-            <CardTitle>Carregando</CardTitle>
-            <CardDescription>Verificando sua sessao...</CardDescription>
-          </CardHeader>
-        </Card>
-      </AuthShell>
-    )
-  }
-
-  if (!session) {
-    return (
-      <AuthShell>
-        <AuthForm />
-      </AuthShell>
-    )
-  }
-
-  return <WorkspaceScreen session={session} />
+export function AuthLoading() {
+  return (
+    <AuthShell>
+      <Card>
+        <CardHeader>
+          <CardTitle>Carregando</CardTitle>
+          <CardDescription>Verificando sua sessao...</CardDescription>
+        </CardHeader>
+      </Card>
+    </AuthShell>
+  )
 }
 
 function AuthShell({ children }: { children: React.ReactNode }) {
@@ -81,12 +74,24 @@ function AuthForm() {
         ? supabase.auth.signInWithPassword({ email, password })
         : supabase.auth.signUp({ email, password })
 
-    const { error } = await action
+    const { data, error } = await action
 
     if (error) {
       setErrorMessage(error.message)
       setIsSubmitting(false)
       return
+    }
+
+    if (data?.session) {
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      })
+      if (sessionError) {
+        setErrorMessage(sessionError.message)
+        setIsSubmitting(false)
+        return
+      }
     }
 
     if (mode === "sign-up") {
@@ -169,32 +174,4 @@ function AuthForm() {
       </CardFooter>
     </Card>
   )
-}
-
-function useSession() {
-  const [session, setSession] = React.useState<Session | null>(null)
-  const [loading, setLoading] = React.useState(true)
-
-  React.useEffect(() => {
-    let mounted = true
-
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return
-      setSession(data.session)
-      setLoading(false)
-    })
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        setSession(nextSession)
-      }
-    )
-
-    return () => {
-      mounted = false
-      listener.subscription.unsubscribe()
-    }
-  }, [])
-
-  return { session, loading }
 }
