@@ -91,6 +91,21 @@ npm run dev
 ## Variaveis de ambiente (Edge Functions)
 
 - `GEMINI_API_KEY` (secret no Supabase)
+- `GEMINI_MODEL` (opcional, default `gemini-2.5-flash`)
+
+## Edge Function: generate-messages
+
+- Endpoint: `POST /functions/v1/generate-messages`
+- Request JSON:
+  - `lead.name` (string, obrigatorio)
+  - `lead.email`, `lead.phone`, `lead.company`, `lead.job_title`, `lead.lead_source`, `lead.notes` (opcional)
+  - `lead.custom_fields` (objeto, opcional)
+  - `campaign.name` (string, obrigatorio)
+  - `campaign.context` (string ou objeto, obrigatorio)
+  - `campaign.prompt` (string ou objeto, obrigatorio)
+  - `variations` (number, opcional, 1-5)
+- Response JSON:
+  - `messages` (string[])
 
 ## Deploy
 
