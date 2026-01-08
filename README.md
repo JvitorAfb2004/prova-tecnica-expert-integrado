@@ -40,6 +40,10 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - `handle_workspace_created` (membership admin + etapas default)
 - `accept_workspace_invite(token)` (convite interno)
 
+## Migrations
+
+- SQL versionado em `supabase/migrations`
+
 ## Funcionalidades
 
 ### Obrigatorias (MVP)
@@ -47,7 +51,9 @@ Mini CRM para equipes de SDR com funil de pre-vendas, campanhas e geracao de men
 - [x] Autenticacao email/senha (Supabase Auth)
 - [x] Workspaces com isolamento de dados
 - [ ] Gestao de leads (CRUD + campos padrao e personalizados)
+- [x] CRUD basico de leads (campos padrao)
 - [ ] Funil de pre-vendas com etapas e Kanban
+- [x] Visualizacao de leads por etapas (sem drag and drop)
 - [ ] Campanhas de abordagem
 - [ ] Geracao de mensagens (2 a 3 variacoes)
 - [ ] RLS no banco
